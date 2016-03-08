@@ -1,7 +1,6 @@
 package com.smedic.tubtub;
 
 import android.app.Activity;
-import android.os.AsyncTask;
 import android.os.Handler;
 import android.util.Log;
 
@@ -21,6 +20,7 @@ import com.google.api.services.youtube.model.SearchListResponse;
 import com.google.api.services.youtube.model.SearchResult;
 import com.google.api.services.youtube.model.Video;
 import com.google.api.services.youtube.model.VideoListResponse;
+import com.smedic.tubtub.fragments.PlaylistsFragment;
 import com.smedic.tubtub.utils.Auth;
 import com.smedic.tubtub.utils.Config;
 import com.smedic.tubtub.utils.Utils;
@@ -53,7 +53,6 @@ public class YouTubeSearch {
 
     private String mChosenAccountName;
 
-
     //test
     private static final int REQUEST_GOOGLE_PLAY_SERVICES = 0;
     private static final int REQUEST_GMS_ERROR_DIALOG = 1;
@@ -70,6 +69,9 @@ public class YouTubeSearch {
         handler = new Handler();
 
         ////test
+        if(activity == null) {
+            Log.d(TAG, "Activity nul ?!?!? ");
+        }
         credential = GoogleAccountCredential.usingOAuth2(activity.getApplicationContext(), Arrays.asList(Auth.SCOPES));
         credential.setBackOff(new ExponentialBackOff());
     }
@@ -88,11 +90,11 @@ public class YouTubeSearch {
         credential.setSelectedAccountName(mChosenAccountName);
     }
 
-    public void buildYouTube() {
+    public void searchPlaylists(final ArrayList<PlaylistItem> playlistsList,
+                                final PlaylistsFragment.PlaylistAdapter playlistAdapter) {
 
-        new AsyncTask<Void, Void, Void>() {
-            @Override
-            protected Void doInBackground(Void... voids) {
+        new Thread() {
+            public void run() {
 
                 youtube = new YouTube.Builder(new NetHttpTransport(), new JacksonFactory(), credential)
                         .setApplicationName("YouTubeAudioApp").build();
@@ -109,10 +111,10 @@ public class YouTubeSearch {
 
                     Log.d(TAG, "Name: " + channel.getSnippet().getTitle() + " , getId: " + channel.getId());
 
-                    YouTube.Playlists.List searchList = youtube.playlists().list("id,snippet,contentDetails").setKey(Config.YOUTUBE_API_KEY);
+                    YouTube.Playlists.List searchList = youtube.playlists().list("id,snippet,contentDetails,status").setKey(Config.YOUTUBE_API_KEY);
 
                     searchList.setChannelId(channel.getId());
-                    searchList.setFields("items(id,snippet(title))");
+                    searchList.setFields("items(id,snippet/title,snippet/thumbnails/default/url,contentDetails/itemCount,status)");
                     searchList.setMaxResults((long) 10);
 
                     PlaylistListResponse playListResponse = searchList.execute();
@@ -126,20 +128,32 @@ public class YouTubeSearch {
                         while (iteratorPlaylistResults.hasNext()) {
                             Playlist playlist = iteratorPlaylistResults.next();
 
-                            Log.d(TAG, " Playlist Id : " + playlist.getId());
-                            Log.d(TAG, " Title: " + playlist.getSnippet().getTitle());
+                            PlaylistItem playlistItem = new PlaylistItem(playlist.getSnippet().getTitle(),
+                                    playlist.getSnippet().getThumbnails().getDefault().getUrl(),
+                                    playlist.getId(),
+                                    playlist.getContentDetails().getItemCount(),
+                                    playlist.getStatus().getPrivacyStatus());
+                            Log.d(TAG, "Playlist: " + playlistItem.toString());
+                            playlistsList.add(playlistItem);
 
                         }
+                        Log.d(TAG, "playlistsList size >>> : " + playlistsList);
+                        handler.post(new Runnable() {
+                            public void run() {
+                                if (playlistAdapter != null) {
+                                    playlistAdapter.notifyDataSetChanged();
+                                }
+                            }
+                        });
                     }
                 } catch (UserRecoverableAuthIOException e) {
                     Log.d(TAG, "BUILD startActivityForResult");
                     activity.startActivityForResult(e.getIntent(), REQUEST_AUTHORIZATION);
                 } catch (IOException e) {
-                    Log.e(TAG, e.getMessage());
+                    e.printStackTrace();
                 }
-                return null;
             }
-        }.execute((Void) null);
+        }.start();
 
     }
 
@@ -167,7 +181,7 @@ public class YouTubeSearch {
                         searchList.setKey(Config.YOUTUBE_API_KEY);
                         searchList.setType("video");
                         searchList.setMaxResults(NUMBER_OF_VIDEOS_RETURNED);
-                        searchList.setFields("items(id/videoId,snippet/title,snippet/description,snippet/thumbnails/default/url),nextPageToken,prevPageToken");
+                        searchList.setFields("items(id/videoId,snippet/title,snippet/thumbnails/default/url),nextPageToken,prevPageToken");
 
                         videosList = youtube.videos().list("id,contentDetails");
                         videosList.setKey(Config.YOUTUBE_API_KEY);
@@ -201,38 +215,6 @@ public class YouTubeSearch {
     }
 
 
-    public void searchPlaylists() {
-        //activity.startActivityForResult(credential.newChooseAccountIntent(), REQUEST_ACCOUNT_PICKER);
-
-        // Construct a request to retrieve the current user's channel ID.
-        // See https://developers.google.com/youtube/v3/docs/channels/list
-        try {
-            Log.d(TAG, "VANSTE'S credentials");
-            YouTube.Channels.List channelRequest = youtube.channels().list("contentDetails");
-            channelRequest.setMine(true);
-            // In the API response, only include channel information needed
-            // for this use case.
-            channelRequest.setFields("items/contentDetails");
-            ChannelListResponse channelResult = channelRequest.execute();
-
-            List<Channel> channelsList = channelResult.getItems();
-
-            if (channelsList != null) {
-                // The user's default channel is the first item in the list.
-                String channelId = channelsList.get(0).getId();
-                Log.d(TAG, "VANSTE'S CHANNEL ID: " + channelId);
-            }
-
-        } catch (UserRecoverableAuthIOException e) {
-            Log.d(TAG, "VANSTE'S startActivityForResult");
-            activity.startActivityForResult(e.getIntent(), REQUEST_AUTHORIZATION);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-
     private ArrayList<VideoItem> search(String keywords) {
         searchList.setQ(keywords);
         try {
@@ -258,12 +240,10 @@ public class YouTubeSearch {
             videosList.setId(contentDetails.toString());
             VideoListResponse resp = videosList.execute();
             List<Video> videoResults = resp.getItems();
-            Log.d(TAG," SIZE: " +  searchResults.size());
             //make items for displaying in listView
             ArrayList<VideoItem> items = new ArrayList<>();
             for (int i = 0; i < searchResults.size(); i++) {
                 VideoItem item = new VideoItem();
-                Log.d(TAG, " TITLE: " + searchResults.get(i).getSnippet().getTitle());
                 //searchList list info
                 item.setTitle(searchResults.get(i).getSnippet().getTitle());
                 //item.setDescription(searchResults.get(i).getSnippet().getDescription());

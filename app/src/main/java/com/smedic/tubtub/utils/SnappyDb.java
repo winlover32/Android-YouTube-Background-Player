@@ -63,7 +63,7 @@ public class SnappyDb {
         VideoItem videoItem = null;
         try {
             videoItem = snappyDB.getObject(key, VideoItem.class);
-            Log.d(TAG, "Got video: " + key + ", DB size: " + snappyDB.countKeys(KEY_PREFIX));
+            //Log.d(TAG, "Got video: " + key + ", DB size: " + snappyDB.countKeys(KEY_PREFIX));
         } catch (SnappydbException e) {
             e.printStackTrace();
         }

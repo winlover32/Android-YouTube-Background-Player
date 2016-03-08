@@ -68,28 +68,4 @@ public class VideoItem implements Serializable {
                 ", title='" + title + '\'' +
                 '}';
     }
-
-    /*@Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        VideoItem videoItem = (VideoItem) o;
-
-        if (!title.equals(videoItem.title)) return false;
-        if (thumbnailURL != null ? !thumbnailURL.equals(videoItem.thumbnailURL) : videoItem.thumbnailURL != null)
-            return false;
-        if (!id.equals(videoItem.id)) return false;
-        return !(duration != null ? !duration.equals(videoItem.duration) : videoItem.duration != null);
-
-    }
-
-    @Override
-    public int hashCode() {
-        int result = title.hashCode();
-        result = 31 * result + (thumbnailURL != null ? thumbnailURL.hashCode() : 0);
-        result = 31 * result + id.hashCode();
-        result = 31 * result + (duration != null ? duration.hashCode() : 0);
-        return result;
-    }*/
 }

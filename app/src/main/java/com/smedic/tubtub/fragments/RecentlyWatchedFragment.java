@@ -80,7 +80,7 @@ public class RecentlyWatchedFragment extends Fragment {
 
         if (!getUserVisibleHint()){
             Log.d(TAG, "not getUserVisibleHint");
-            return;
+            //return;
         }
 
         recentlyPlayedVideos.clear();
