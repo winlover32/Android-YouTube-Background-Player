@@ -26,6 +26,7 @@ import com.android.volley.toolbox.Volley;
 import com.smedic.tubtub.fragments.PlaylistsFragment;
 import com.smedic.tubtub.fragments.RecentlyWatchedFragment;
 import com.smedic.tubtub.fragments.SearchFragment;
+import com.smedic.tubtub.utils.SnappyDb;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,10 +48,16 @@ public class MainActivity extends AppCompatActivity {
             android.R.drawable.ic_menu_upload_you_tube
     };
 
+    private static final String DATABASE_NAME = "youtube_database";
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        //SnappyDB - NoSql
+        SnappyDb.getInstance().init(this, DATABASE_NAME);
 
         volleyQueue = Volley.newRequestQueue(this);
 

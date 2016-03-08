@@ -27,6 +27,7 @@ dependencies {
     compile 'com.mcxiaoke.volley:library:1.0.19'
     compile 'com.android.support:support-v4:23.2.0'
     compile 'com.android.support:recyclerview-v7:23.2.0'
+    compile 'com.snappydb:snappydb-lib:0.5.2'
 
     compile files('libs/nineoldandroids-2.4.0.jar')
     compile files('libs/listviewanimations_lib-core-slh_3.1.0.jar')
@@ -44,5 +45,6 @@ dependencies {
     compile files('libs/google-api-services-youtube-v3-rev160-1.21.0.jar')
 
     compile files('libs/picasso-2.5.2.jar')
+
 
 }

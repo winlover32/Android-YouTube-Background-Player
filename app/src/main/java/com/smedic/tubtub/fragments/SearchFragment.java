@@ -8,6 +8,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
+import android.widget.AdapterView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -16,6 +17,7 @@ import com.smedic.tubtub.R;
 import com.smedic.tubtub.VideoItem;
 import com.smedic.tubtub.VideosAdapter;
 import com.smedic.tubtub.YouTubeSearch;
+import com.smedic.tubtub.utils.SnappyDb;
 
 import java.util.ArrayList;
 
@@ -71,7 +73,7 @@ public class SearchFragment extends ListFragment {
         loadingProgressBar = new ProgressBar(getContext());
         videosFoundListView = (DynamicListView) getListView();
 
-        setupAdapter();
+        //setupAdapter();
 
         addListeners();
     }
@@ -85,15 +87,42 @@ public class SearchFragment extends ListFragment {
 
     public void searchQuery(String query){
         Log.d(TAG, "search query");
-        if(youTubeSearch == null) {
-            Log.d(TAG, "null ?!");
+        if (searchQuery != null) {
+            if (!searchQuery.equals(query)) { //check so on new query, it wont call onScroll and trigger last element event
+                preLast = 0;
+            }
         }
-        this.youTubeSearch.searchOnYoutube(query, searchResultsList, videoListAdapter);
+        searchQuery = query;
 
-        this.searchQuery = query;
+        //initially set adapter
+        if (videoListAdapter == null) {
+            handler.post(new Runnable() {
+                public void run() {
+                    setupAdapter();
+                }
+            });
+        } else {
+            youTubeSearch.searchOnYoutube(query, searchResultsList, videoListAdapter);
+        }
     }
 
     private void addListeners() {
+
+        videosFoundListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> av, View v, int pos,
+                                    long id) {
+                SnappyDb.getInstance().insertVideo(searchResultsList.get(pos));
+
+                Toast.makeText(getContext(), "Playing: " + searchResultsList.get(pos), Toast.LENGTH_SHORT).show();
+
+                //Intent serviceIntent = new Intent(getContext(), YouTubeService.class);
+                //serviceIntent.putExtra("YT_URL", searchResultsList.get(pos).getId());
+                //startService(serviceIntent);
+            }
+        });
+
         videosFoundListView.setOnScrollListener(new AbsListView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(AbsListView view, int scrollState) {
@@ -107,7 +136,6 @@ public class SearchFragment extends ListFragment {
 
                         // Sample calculation to determine if the last item is fully visible.
                         final int lastItem = firstVisibleItem + visibleItemCount;
-                        //Log.d(TAG, "last item: " + lastItem + ", totalItemCount: " + totalItemCount);
                         if (lastItem > 500) {
                             videosFoundListView.removeFooterView(loadingProgressBar);
                             Toast.makeText(getContext(), "No more videos", Toast.LENGTH_SHORT).show();
@@ -119,7 +147,6 @@ public class SearchFragment extends ListFragment {
                                     videosFoundListView.addFooterView(loadingProgressBar);
                                 }
                                 Log.d(TAG, "Last. Search the same query");
-                                //handleIntent(getIntent());
                                 searchQuery(searchQuery);
                                 preLast = lastItem;
                             }
