@@ -15,7 +15,7 @@ import android.widget.Toast;
 
 import com.nhaarman.listviewanimations.appearance.simple.SwingBottomInAnimationAdapter;
 import com.nhaarman.listviewanimations.itemmanipulation.DynamicListView;
-import com.smedic.tubtub.BackgroundPlayer;
+import com.smedic.tubtub.BackgroundAudioService;
 import com.smedic.tubtub.R;
 import com.smedic.tubtub.VideoItem;
 import com.smedic.tubtub.VideosAdapter;
@@ -139,7 +139,8 @@ public class SearchFragment extends ListFragment {
 
                 Toast.makeText(getContext(), "Playing: " + searchResultsList.get(pos), Toast.LENGTH_SHORT).show();
 
-                Intent serviceIntent = new Intent(getContext(), BackgroundPlayer.class);
+                Intent serviceIntent = new Intent(getContext(), BackgroundAudioService.class);
+                serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
                 serviceIntent.putExtra("YT_MEDIA_TYPE", Config.YOUTUBE_VIDEO);
                 serviceIntent.putExtra("YT_VIDEO", searchResultsList.get(pos).getId());
                 getActivity().startService(serviceIntent);

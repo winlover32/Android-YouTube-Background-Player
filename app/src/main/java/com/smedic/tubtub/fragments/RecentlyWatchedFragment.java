@@ -1,6 +1,7 @@
 package com.smedic.tubtub.fragments;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
@@ -23,8 +24,10 @@ import com.nhaarman.listviewanimations.itemmanipulation.swipedismiss.OnDismissCa
 import com.nhaarman.listviewanimations.itemmanipulation.swipedismiss.undo.SimpleSwipeUndoAdapter;
 import com.nhaarman.listviewanimations.itemmanipulation.swipedismiss.undo.UndoAdapter;
 import com.nhaarman.listviewanimations.util.Swappable;
+import com.smedic.tubtub.BackgroundAudioService;
 import com.smedic.tubtub.R;
 import com.smedic.tubtub.VideoItem;
+import com.smedic.tubtub.utils.Config;
 import com.smedic.tubtub.utils.SnappyDb;
 import com.squareup.picasso.Picasso;
 
@@ -144,14 +147,11 @@ public class RecentlyWatchedFragment extends Fragment {
                                     long id) {
                 Toast.makeText(getContext(), "Playing: " + recentlyPlayedVideos.get(pos), Toast.LENGTH_SHORT).show();
 
-                /*new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        //Intent serviceIntent = new Intent(getContext(), YouTubeService.class);
-                        //serviceIntent.putExtra("YT_URL", recentlyPlayedVideos.get(pos).getId());
-                        //startService(serviceIntent);
-                    }
-                }).start();*/
+                Intent serviceIntent = new Intent(getContext(), BackgroundAudioService.class);
+                serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
+                serviceIntent.putExtra("YT_MEDIA_TYPE", Config.YOUTUBE_VIDEO);
+                serviceIntent.putExtra("YT_VIDEO", recentlyPlayedVideos.get(pos).getId());
+                getActivity().startService(serviceIntent);
             }
         });
     }
