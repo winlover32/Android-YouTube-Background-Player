@@ -68,10 +68,6 @@ public class YouTubeSearch {
 
         handler = new Handler();
 
-        ////test
-        if(activity == null) {
-            Log.d(TAG, "Activity nul ?!?!? ");
-        }
         credential = GoogleAccountCredential.usingOAuth2(activity.getApplicationContext(), Arrays.asList(Auth.SCOPES));
         credential.setBackOff(new ExponentialBackOff());
     }
@@ -88,6 +84,10 @@ public class YouTubeSearch {
     public void setAuthSelectedAccountName(String authSelectedAccountName) {
         this.mChosenAccountName = authSelectedAccountName;
         credential.setSelectedAccountName(mChosenAccountName);
+    }
+
+    public GoogleAccountCredential getCredential() {
+        return credential;
     }
 
     public void searchPlaylists(final ArrayList<PlaylistItem> playlistsList,
@@ -209,11 +209,92 @@ public class YouTubeSearch {
         }.start();
     }
 
+    //method for searching only 50 videos
 
-    public GoogleAccountCredential getCredential() {
-        return credential;
+    public void searchOnYoutube2(final String keywords, final ArrayList<VideoItem> searchResultsList,
+                                 final VideosAdapter videoListAdapter) {
+
+        Log.d(TAG, "searchOnYoutube");
+
+        new Thread() {
+            public void run() {
+                try {
+
+                    YouTube.Search.List searchList;
+                    YouTube.Videos.List videosList;
+
+                    searchList = youtube.search().list("id,snippet");
+                    searchList.setKey(Config.YOUTUBE_API_KEY);
+                    searchList.setType("video");
+                    searchList.setMaxResults(NUMBER_OF_VIDEOS_RETURNED);
+                    searchList.setFields("items(id/videoId,snippet/title,snippet/thumbnails/default/url)");
+
+                    videosList = youtube.videos().list("id,contentDetails");
+                    videosList.setKey(Config.YOUTUBE_API_KEY);
+                    videosList.setFields("items(contentDetails/duration)");
+
+                    //search
+                    searchList.setQ(keywords);
+                    SearchListResponse searchListResponse = searchList.execute();
+                    List<SearchResult> searchResults = searchListResponse.getItems();
+
+                    //save all ids from searchList list in order to find video list
+                    StringBuilder contentDetails = new StringBuilder();
+
+                    int ii = 0;
+                    for (SearchResult result : searchResults) {
+                        contentDetails.append(result.getId().getVideoId());
+                        if (ii < 49)
+                            contentDetails.append(",");
+                        ii++;
+                    }
+
+                    //find video list
+                    videosList.setId(contentDetails.toString());
+                    VideoListResponse resp = videosList.execute();
+                    List<Video> videoResults = resp.getItems();
+                    //make items for displaying in listView
+                    ArrayList<VideoItem> items = new ArrayList<>();
+                    for (int i = 0; i < searchResults.size(); i++) {
+                        VideoItem item = new VideoItem();
+                        //searchList list info
+                        item.setTitle(searchResults.get(i).getSnippet().getTitle());
+                        //item.setDescription(searchResults.get(i).getSnippet().getDescription());
+                        item.setThumbnailURL(searchResults.get(i).getSnippet().getThumbnails().getDefault().getUrl());
+                        item.setId(searchResults.get(i).getId().getVideoId());
+                        //video info
+                        if (videoResults.get(i) != null) {
+                            String isoTime = videoResults.get(i).getContentDetails().getDuration();
+                            String time = Utils.convertISO8601DurationToNormalTime(isoTime);
+                            item.setDuration(time);
+                        } else {
+                            item.setDuration("NA");
+                        }
+
+                        //add to the list
+                        items.add(item);
+                    }
+
+                    searchResultsList.addAll(items);
+
+                    Log.d(TAG, "Search list size: " + searchResultsList.size());
+
+                    handler.post(new Runnable() {
+                        public void run() {
+                            if (videoListAdapter != null) {
+                                videoListAdapter.notifyDataSetChanged();
+                            }
+                        }
+                    });
+
+                } catch (IOException e) {
+                    Log.e(TAG, "Could not initialize: " + e);
+                    e.printStackTrace();
+                    return;
+                }
+            }
+        }.start();
     }
-
 
     private ArrayList<VideoItem> search(String keywords) {
         searchList.setQ(keywords);
@@ -278,36 +359,5 @@ public class YouTubeSearch {
             Log.d(TAG, "Could not search: " + e);
             return;
         }
-    }
-
-
-    public void searchOnYoutube2(final String keywords, final ArrayList<String> list) {
-        searchList.setQ(keywords);
-        new Thread() {
-            public void run() {
-                try {
-                    searchList = youtube.search().list("id,snippet");
-                    searchList.setKey(Config.YOUTUBE_API_KEY);
-                    searchList.setType("video");
-                    searchList.setMaxResults(5l);
-                    searchList.setFields("items(id/videoId,snippet/title)");
-
-                    SearchListResponse searchListResponse = searchList.execute();
-                    List<SearchResult> searchResults = searchListResponse.getItems();
-
-                    //make items for displaying in listView
-                    Log.d(TAG, " SIZE : " + searchResults.size());
-                    for (int i = 0; i < searchResults.size(); i++) {
-                        Log.d(TAG, "ADD TO LIST: " + searchResults.get(i).getSnippet().getTitle());
-                        //list.add(searchResults.get(i).getSnippet().getTitle());
-                        list.add("peraaaaaaaaa");
-                    }
-                    Log.d(TAG, " SIZE2 : " + list.size());
-                } catch (IOException e) {
-                    Log.d(TAG, "Could not initialize: " + e);
-                    return;
-                }
-            }
-        }.start();
     }
 }

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/linear_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
@@ -8,20 +9,30 @@
         android:layout_width="match_parent"
         android:layout_height="14dip" />
 
-    <TextView
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="User's playlists"
-        android:layout_gravity="center"
-        android:id="@+id/textView2" />
+        android:orientation="horizontal">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="User's playlists"
+            android:layout_gravity="center"
+            android:id="@+id/textView2" />
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/searchButton"/>
+    </LinearLayout>
+
 
     <Space
         android:layout_width="match_parent"
         android:layout_height="3dip" />
 
     <com.nhaarman.listviewanimations.itemmanipulation.DynamicListView
-        android:id="@+id/recently_played"
+        android:id="@+id/playlists"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:dividerHeight="3dp" />

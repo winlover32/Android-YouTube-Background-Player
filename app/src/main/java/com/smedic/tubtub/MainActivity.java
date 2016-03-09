@@ -17,7 +17,6 @@ import android.support.v4.widget.SimpleCursorAdapter;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -67,6 +66,7 @@ public class MainActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
 
         viewPager = (ViewPager) findViewById(R.id.viewpager);
+        viewPager.setOffscreenPageLimit(2);
         setupViewPager(viewPager);
 
         tabLayout = (TabLayout) findViewById(R.id.tabs);
@@ -82,7 +82,6 @@ public class MainActivity extends AppCompatActivity {
      */
     @Override
     public void onNewIntent(Intent intent) {
-        Log.d(TAG, "ON NEW INTENT!!!");
         super.onNewIntent(intent);
         setIntent(intent);
 
@@ -93,13 +92,11 @@ public class MainActivity extends AppCompatActivity {
 
         if (Intent.ACTION_SEARCH.equals(intent.getAction())) {
             String query = intent.getStringExtra(SearchManager.QUERY);
-            Log.d(TAG, "QUERY: " + query);
             if(searchFragment != null) {
                 searchFragment.searchQuery(query);
             }
         }
     }
-
 
     private void setupTabIcons() {
         tabLayout.getTabAt(0).setIcon(tabIcons[0]);
@@ -109,15 +106,17 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void setupViewPager(ViewPager viewPager) {
+
         ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
-        adapter.addFragment(new RecentlyWatchedFragment(), "ONE");
+        adapter.addFragment(new RecentlyWatchedFragment(), "Recently watched");
 
         searchFragment = new SearchFragment();
 
-        adapter.addFragment(searchFragment, "TWO");
-        adapter.addFragment(new PlaylistsFragment(), "THREE");
+        adapter.addFragment(searchFragment, "Search");
+        adapter.addFragment(new PlaylistsFragment(), "Playlists");
         viewPager.setAdapter(adapter);
     }
+
 
     class ViewPagerAdapter extends FragmentPagerAdapter {
         private final List<Fragment> mFragmentList = new ArrayList<>();
@@ -144,7 +143,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public CharSequence getPageTitle(int position) {
-            return null; /*mFragmentTitleList.get(position);*/
+            return mFragmentTitleList.get(position);
         }
     }
 
@@ -158,10 +157,7 @@ public class MainActivity extends AppCompatActivity {
 
         final SearchView searchView = (SearchView) MenuItemCompat.getActionView(searchItem);
         if (searchView != null) {
-            Log.d(TAG, "search view not null");
             searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
-        } else {
-            Log.e(TAG, "search view null");
         }
 
         //suggestions
@@ -197,7 +193,6 @@ public class MainActivity extends AppCompatActivity {
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String s) {
-                Log.d(TAG, "TEXT SUBMIT");
                 viewPager.setCurrentItem(1);
                 return false; //if true, no new intent is started
 
@@ -206,7 +201,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onQueryTextChange(String suggestion) {
 
-                if (suggestion.length() > 2) {
+                if (suggestion.length() > 2) { //make suggestions after 3rd letter
 
                     JsonAsyncTask asyncTask = new JsonAsyncTask(new JsonAsyncTask.AsyncResponse() {
                         @Override
@@ -228,11 +223,9 @@ public class MainActivity extends AppCompatActivity {
                         }
                     });
                     asyncTask.execute(suggestion);
-
                     return true;
-                } else {
-                    return false;
                 }
+                return false;
             }
         });
 

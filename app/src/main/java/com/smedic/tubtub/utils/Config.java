@@ -6,6 +6,9 @@ package com.smedic.tubtub.utils;
 
 public final class Config {
 
+    public static final int YOUTUBE_VIDEO = 0;
+    public static final int YOUTUBE_PLAYLIST = 1;
+
     private Config() {
     }
 

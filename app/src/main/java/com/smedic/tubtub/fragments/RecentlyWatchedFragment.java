@@ -63,7 +63,7 @@ public class RecentlyWatchedFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_recently_watched, container, false);
 
         /* Setup the ListView */
-        recentlyPlayedListView = (DynamicListView) v.findViewById(R.id.recently_played);  //TODO make use of just one layout file, not two
+        recentlyPlayedListView = (DynamicListView) v.findViewById(R.id.recently_played);
 
         recentlyPlayedVideos = new ArrayList<>();
         setupListViewAndAdapter();
@@ -79,7 +79,7 @@ public class RecentlyWatchedFragment extends Fragment {
         super.onResume();
 
         if (!getUserVisibleHint()){
-            Log.d(TAG, "not getUserVisibleHint");
+            //Log.d(TAG, "not getUserVisibleHint");
             //return;
         }
 
@@ -88,12 +88,19 @@ public class RecentlyWatchedFragment extends Fragment {
         videoListAdapter.notifyDataSetChanged();
     }
 
+
     @Override
     public void setUserVisibleHint(boolean visible){
         super.setUserVisibleHint(visible);
-        Log.d(TAG, "setUserVisibleHint");
+
+        if (visible) {
+            //Log.d(TAG, "RecentlyWatchedFragment is now visible!");
+        } else {
+            //Log.d(TAG, "RecentlyWatchedFragment is now invisible!");
+        }
+
         if (visible && isResumed()){
-            Log.d(TAG, "setUserVisibleHint visible and resumed");
+            //Log.d(TAG, "RecentlyWatchedFragment visible and resumed");
             //Only manually call onResume if fragment is already visible
             //Otherwise allow natural fragment lifecycle to call onResume
             onResume();

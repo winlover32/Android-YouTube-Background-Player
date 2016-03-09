@@ -1,5 +1,6 @@
 package com.smedic.tubtub.fragments;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.ListFragment;
@@ -12,11 +13,14 @@ import android.widget.AdapterView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import com.nhaarman.listviewanimations.appearance.simple.SwingBottomInAnimationAdapter;
 import com.nhaarman.listviewanimations.itemmanipulation.DynamicListView;
+import com.smedic.tubtub.BackgroundPlayer;
 import com.smedic.tubtub.R;
 import com.smedic.tubtub.VideoItem;
 import com.smedic.tubtub.VideosAdapter;
 import com.smedic.tubtub.YouTubeSearch;
+import com.smedic.tubtub.utils.Config;
 import com.smedic.tubtub.utils.SnappyDb;
 
 import java.util.ArrayList;
@@ -26,7 +30,7 @@ import java.util.ArrayList;
  */
 public class SearchFragment extends ListFragment {
 
-    private static final String TAG = "SMEDIC SEARCH FRAGMENT" ;
+    private static final String TAG = "SMEDIC SEARCH FRAGMENT";
     private DynamicListView videosFoundListView;
     private Handler handler;
     private ArrayList<VideoItem> searchResultsList;
@@ -35,7 +39,6 @@ public class SearchFragment extends ListFragment {
     private YouTubeSearch youTubeSearch;
     private ProgressBar loadingProgressBar;
     private String searchQuery;
-
 
     public SearchFragment() {
         // Required empty public constructor
@@ -52,6 +55,8 @@ public class SearchFragment extends ListFragment {
         // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_search, container, false);
 
+        Log.d(TAG, "onCreateView");
+
         handler = new Handler();
         searchResultsList = new ArrayList<>();
 
@@ -59,11 +64,33 @@ public class SearchFragment extends ListFragment {
     }
 
     @Override
-    public void onResume(){
+    public void setUserVisibleHint(boolean visible) {
+        super.setUserVisibleHint(visible);
+
+        if (visible) {
+            Log.d(TAG, "SearchFragment is now visible!");
+        } else {
+            //Log.d(TAG, "SearchFragment is now invisible!");
+        }
+
+        if (visible && isResumed()) {
+            //Log.d(TAG, "SearchFragment visible and resumed");
+            //Only manually call onResume if fragment is already visible
+            //Otherwise allow natural fragment lifecycle to call onResume
+            onResume();
+        }
+    }
+
+    @Override
+    public void onResume() {
         super.onResume();
+
+        if (!getUserVisibleHint()) {
+            //Log.d(TAG, "not getUserVisibleHint");
+            //return;
+        }
         youTubeSearch = new YouTubeSearch(getActivity());
         youTubeSearch.buildYouTube0();
-        Log.d(TAG, "onResume finished");
     }
 
     @Override
@@ -73,20 +100,20 @@ public class SearchFragment extends ListFragment {
         loadingProgressBar = new ProgressBar(getContext());
         videosFoundListView = (DynamicListView) getListView();
 
-        //setupAdapter();
+        setupAdapter();
 
         addListeners();
     }
 
     private void setupAdapter() {
         videoListAdapter = new VideosAdapter(getActivity(), searchResultsList);
-        //SwingBottomInAnimationAdapter animationAdapter = new SwingBottomInAnimationAdapter(videoListAdapter);
-        //animationAdapter.setAbsListView(videosFoundListView);
-        videosFoundListView.setAdapter(videoListAdapter);
+        SwingBottomInAnimationAdapter animationAdapter = new SwingBottomInAnimationAdapter(videoListAdapter);
+        animationAdapter.setAbsListView(videosFoundListView);
+        videosFoundListView.setAdapter(animationAdapter);
     }
 
-    public void searchQuery(String query){
-        Log.d(TAG, "search query");
+    public void searchQuery(String query) {
+        Log.d(TAG, "Search query: " + query);
         if (searchQuery != null) {
             if (!searchQuery.equals(query)) { //check so on new query, it wont call onScroll and trigger last element event
                 preLast = 0;
@@ -95,15 +122,10 @@ public class SearchFragment extends ListFragment {
         searchQuery = query;
 
         //initially set adapter
-        if (videoListAdapter == null) {
-            handler.post(new Runnable() {
-                public void run() {
-                    setupAdapter();
-                }
-            });
-        } else {
-            youTubeSearch.searchOnYoutube(query, searchResultsList, videoListAdapter);
+        if (!searchResultsList.isEmpty()) {
+            searchResultsList.clear();
         }
+        youTubeSearch.searchOnYoutube2(query, searchResultsList, videoListAdapter);
     }
 
     private void addListeners() {
@@ -117,9 +139,10 @@ public class SearchFragment extends ListFragment {
 
                 Toast.makeText(getContext(), "Playing: " + searchResultsList.get(pos), Toast.LENGTH_SHORT).show();
 
-                //Intent serviceIntent = new Intent(getContext(), YouTubeService.class);
-                //serviceIntent.putExtra("YT_URL", searchResultsList.get(pos).getId());
-                //startService(serviceIntent);
+                Intent serviceIntent = new Intent(getContext(), BackgroundPlayer.class);
+                serviceIntent.putExtra("YT_MEDIA_TYPE", Config.YOUTUBE_VIDEO);
+                serviceIntent.putExtra("YT_VIDEO", searchResultsList.get(pos).getId());
+                getActivity().startService(serviceIntent);
             }
         });
 
@@ -137,17 +160,17 @@ public class SearchFragment extends ListFragment {
                         // Sample calculation to determine if the last item is fully visible.
                         final int lastItem = firstVisibleItem + visibleItemCount;
                         if (lastItem > 500) {
-                            videosFoundListView.removeFooterView(loadingProgressBar);
+                            //videosFoundListView.removeFooterView(loadingProgressBar);
                             Toast.makeText(getContext(), "No more videos", Toast.LENGTH_SHORT).show();
                         }
 
                         if (lastItem == totalItemCount) {
                             if (preLast != lastItem && lastItem < 500) { //avoid multiple calls for last item and loading more than 500 videos - google restriction
-                                if (videosFoundListView.getFooterViewsCount() == 0) {
-                                    videosFoundListView.addFooterView(loadingProgressBar);
-                                }
+                                //if (videosFoundListView.getFooterViewsCount() == 0) {
+                                //    videosFoundListView.addFooterView(loadingProgressBar);
+                                //}
                                 Log.d(TAG, "Last. Search the same query");
-                                searchQuery(searchQuery);
+                                //searchQuery(searchQuery);
                                 preLast = lastItem;
                             }
                         }

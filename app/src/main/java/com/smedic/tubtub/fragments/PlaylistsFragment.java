@@ -15,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
@@ -54,6 +55,8 @@ public class PlaylistsFragment extends Fragment {
 
     private YouTubeSearch youTubeSearch;
     private boolean[] itemChecked;
+    private Button searchPlaylistsButton;
+
     public PlaylistsFragment() {
         // Required empty public constructor
     }
@@ -84,12 +87,12 @@ public class PlaylistsFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_playlists, container, false);
 
         /* Setup the ListView */
-        playlistsListView = (DynamicListView) v.findViewById(R.id.recently_played);  //TODO make use of just one layout file, not two
+        playlistsListView = (DynamicListView) v.findViewById(R.id.playlists);
+
+        searchPlaylistsButton = (Button) v.findViewById(R.id.searchButton);
 
         playlists = new ArrayList<>();
         setupListViewAndAdapter();
@@ -97,50 +100,41 @@ public class PlaylistsFragment extends Fragment {
         handler = new Handler();
         itemChecked = new boolean[500];
 
+        searchPlaylistsButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (getActivity() == null) {
+                    Log.e(TAG, "onActivityCreated - activity is null!");
+                } else {
+                    Log.d(TAG, "onActivityCreated search for playlists...");
+                    youTubeSearch = new YouTubeSearch(getActivity());
+                    mChosenAccountName = "vanste25@gmail.com";
+                    youTubeSearch.setAuthSelectedAccountName(mChosenAccountName);
+                    youTubeSearch.searchPlaylists(playlists, playlistsAdapter);
+
+                    searchPlaylistsButton.setVisibility(View.INVISIBLE);
+                }
+            }
+        });
+
         return v;
     }
 
     @Override
-    public void onActivityCreated(Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-        Log.d(TAG, "***** onActivityCreated ******");
-
-        youTubeSearch = new YouTubeSearch(getActivity());
-        mChosenAccountName = "vanste25@gmail.com";
-        youTubeSearch.setAuthSelectedAccountName(mChosenAccountName);
-
-        youTubeSearch.searchPlaylists(playlists, playlistsAdapter);
-    }
-
-    /*@Override
     public void setUserVisibleHint(boolean visible){
         super.setUserVisibleHint(visible);
-        Log.d(TAG, "2 setUserVisibleHint");
+
+        if (visible) {
+            //Log.d(TAG, "PlaylistsFragment is now visible!");
+        } else {
+            //Log.d(TAG, "PlaylistsFragment is now invisible!");
+        }
+
         if (visible && isResumed()){
-            Log.d(TAG, "2 setUserVisibleHint visible and resumed");
+            //Log.d(TAG, "PlaylistsFragment visible and resumed");
             //Only manually call onResume if fragment is already visible
             //Otherwise allow natural fragment lifecycle to call onResume
             onResume();
-
-            youTubeSearch = new YouTubeSearch(getActivity());
-            youTubeSearch.setAuthSelectedAccountName(mChosenAccountName);
-
-            youTubeSearch.buildYouTube0();
-        }
-
-    }*/
-
-    @Override
-    public void setMenuVisibility(final boolean visible) {
-        super.setMenuVisibility(visible);
-        Log.d(TAG, "2 setMenuVisibility 0");
-        if (visible) {
-            Log.d(TAG, "2 setMenuVisibility 1");
-            /*youTubeSearch = new YouTubeSearch(getActivity());
-            mChosenAccountName = "vanste25@gmail.com";
-            youTubeSearch.setAuthSelectedAccountName(mChosenAccountName);
-
-            youTubeSearch.searchPlaylists(playlists, playlistsAdapter);*/
         }
     }
 
