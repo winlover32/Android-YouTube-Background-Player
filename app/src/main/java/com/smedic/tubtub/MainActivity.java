@@ -20,8 +20,6 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import com.android.volley.RequestQueue;
-import com.android.volley.toolbox.Volley;
 import com.smedic.tubtub.fragments.PlaylistsFragment;
 import com.smedic.tubtub.fragments.RecentlyWatchedFragment;
 import com.smedic.tubtub.fragments.SearchFragment;
@@ -37,8 +35,6 @@ public class MainActivity extends AppCompatActivity {
     private TabLayout tabLayout;
     private ViewPager viewPager;
 
-    private RequestQueue volleyQueue;
-
     private SearchFragment searchFragment;
 
     private int[] tabIcons = {
@@ -47,18 +43,14 @@ public class MainActivity extends AppCompatActivity {
             android.R.drawable.ic_menu_upload_you_tube
     };
 
-    private static final String DATABASE_NAME = "youtube_database";
-
+    private static final String YOUTUBE_DATABASE = "youtube_database";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        //SnappyDB - NoSql
-        SnappyDb.getInstance().init(this, DATABASE_NAME);
-
-        volleyQueue = Volley.newRequestQueue(this);
+        SnappyDb.getInstance().init(this, YOUTUBE_DATABASE);
 
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -92,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (Intent.ACTION_SEARCH.equals(intent.getAction())) {
             String query = intent.getStringExtra(SearchManager.QUERY);
-            if(searchFragment != null) {
+            if (searchFragment != null) {
                 searchFragment.searchQuery(query);
             }
         }

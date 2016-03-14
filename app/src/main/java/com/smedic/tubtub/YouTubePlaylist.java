@@ -5,7 +5,7 @@ import java.io.Serializable;
 /**
  * Created by Stevan Medic on 8.3.16..
  */
-public class PlaylistItem implements Serializable {
+public class YouTubePlaylist implements Serializable {
 
     private String title;
     private String thumbnailURL;
@@ -13,7 +13,7 @@ public class PlaylistItem implements Serializable {
     private long numberOfVideos;
     private String status;
 
-    public PlaylistItem() {
+    public YouTubePlaylist() {
         this.title = "";
         this.thumbnailURL = "";
         this.id = "";
@@ -21,7 +21,7 @@ public class PlaylistItem implements Serializable {
         this.status = "";
     }
 
-    public PlaylistItem(String title, String thumbnailURL, String id, long numberOfVideos, String status) {
+    public YouTubePlaylist(String title, String thumbnailURL, String id, long numberOfVideos, String status) {
         this.title = title;
         this.thumbnailURL = thumbnailURL;
         this.id = id;
@@ -71,7 +71,7 @@ public class PlaylistItem implements Serializable {
 
     @Override
     public String toString() {
-        return "PlaylistItem {" +
+        return "YouTubePlaylist {" +
                 "id='" + id + '\'' +
                 ", title='" + title + '\'' + ", number of videos=" + numberOfVideos +
                 ", " + status +

@@ -3,17 +3,13 @@ package com.smedic.tubtub.fragments;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -26,7 +22,7 @@ import com.nhaarman.listviewanimations.itemmanipulation.swipedismiss.undo.UndoAd
 import com.nhaarman.listviewanimations.util.Swappable;
 import com.smedic.tubtub.BackgroundAudioService;
 import com.smedic.tubtub.R;
-import com.smedic.tubtub.VideoItem;
+import com.smedic.tubtub.YouTubeVideo;
 import com.smedic.tubtub.utils.Config;
 import com.smedic.tubtub.utils.SnappyDb;
 import com.squareup.picasso.Picasso;
@@ -42,13 +38,10 @@ import javax.annotation.Nullable;
 public class RecentlyWatchedFragment extends Fragment {
 
     private static final String TAG = "SMEDIC RecentlyWatched";
-    private ArrayList<VideoItem> recentlyPlayedVideos;
+    private ArrayList<YouTubeVideo> recentlyPlayedVideos;
 
     private DynamicListView recentlyPlayedListView;
-    private Handler handler;
-    private boolean[] itemChecked;
     private VideoListAdapter videoListAdapter;
-    private String query;
 
     public RecentlyWatchedFragment() {
         // Required empty public constructor
@@ -71,9 +64,6 @@ public class RecentlyWatchedFragment extends Fragment {
         recentlyPlayedVideos = new ArrayList<>();
         setupListViewAndAdapter();
 
-        handler = new Handler();
-        itemChecked = new boolean[500];
-
         return v;
     }
 
@@ -81,11 +71,9 @@ public class RecentlyWatchedFragment extends Fragment {
     public void onResume() {
         super.onResume();
 
-        if (!getUserVisibleHint()){
-            //Log.d(TAG, "not getUserVisibleHint");
-            //return;
+        if (!getUserVisibleHint()) {
+            //do nothing for now
         }
-
         recentlyPlayedVideos.clear();
         recentlyPlayedVideos.addAll(SnappyDb.getInstance().getAllVideoItems());
         videoListAdapter.notifyDataSetChanged();
@@ -93,16 +81,10 @@ public class RecentlyWatchedFragment extends Fragment {
 
 
     @Override
-    public void setUserVisibleHint(boolean visible){
+    public void setUserVisibleHint(boolean visible) {
         super.setUserVisibleHint(visible);
 
-        if (visible) {
-            //Log.d(TAG, "RecentlyWatchedFragment is now visible!");
-        } else {
-            //Log.d(TAG, "RecentlyWatchedFragment is now invisible!");
-        }
-
-        if (visible && isResumed()){
+        if (visible && isResumed()) {
             //Log.d(TAG, "RecentlyWatchedFragment visible and resumed");
             //Only manually call onResume if fragment is already visible
             //Otherwise allow natural fragment lifecycle to call onResume
@@ -114,7 +96,7 @@ public class RecentlyWatchedFragment extends Fragment {
 
         /* Setup the adapter */
         videoListAdapter = new VideoListAdapter(getActivity());
-        SimpleSwipeUndoAdapter simpleSwipeUndoAdapter = new SimpleSwipeUndoAdapter(videoListAdapter, getContext(), new MyOnDismissCallback(videoListAdapter));
+        SimpleSwipeUndoAdapter simpleSwipeUndoAdapter = new SimpleSwipeUndoAdapter(videoListAdapter, getContext(), new MyOnDismissCallback());
         SwingBottomInAnimationAdapter animationAdapter = new SwingBottomInAnimationAdapter(simpleSwipeUndoAdapter);
         animationAdapter.setAbsListView(recentlyPlayedListView);
         recentlyPlayedListView.setAdapter(animationAdapter);
@@ -145,18 +127,18 @@ public class RecentlyWatchedFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> av, View v, final int pos,
                                     long id) {
-                Toast.makeText(getContext(), "Playing: " + recentlyPlayedVideos.get(pos), Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Playing: " + recentlyPlayedVideos.get(pos).getTitle(), Toast.LENGTH_SHORT).show();
 
                 Intent serviceIntent = new Intent(getContext(), BackgroundAudioService.class);
                 serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
-                serviceIntent.putExtra("YT_MEDIA_TYPE", Config.YOUTUBE_VIDEO);
-                serviceIntent.putExtra("YT_VIDEO", recentlyPlayedVideos.get(pos).getId());
+                serviceIntent.putExtra(Config.YOUTUBE_MEDIA_TYPE, Config.YOUTUBE_VIDEO);
+                serviceIntent.putExtra(Config.YOUTUBE_TYPE_VIDEO, recentlyPlayedVideos.get(pos));
                 getActivity().startService(serviceIntent);
             }
         });
     }
 
-    private class VideoListAdapter extends ArrayAdapter<VideoItem> implements Swappable, UndoAdapter {
+    private class VideoListAdapter extends ArrayAdapter<YouTubeVideo> implements Swappable, UndoAdapter {
 
         public VideoListAdapter(Activity context) {
             super(context, R.layout.video_item, recentlyPlayedVideos);
@@ -172,25 +154,12 @@ public class RecentlyWatchedFragment extends Fragment {
             TextView title = (TextView) convertView.findViewById(R.id.video_title);
             TextView duration = (TextView) convertView.findViewById(R.id.video_duration);
 
-            VideoItem searchResult = recentlyPlayedVideos.get(position);
+            YouTubeVideo searchResult = recentlyPlayedVideos.get(position);
 
             Picasso.with(getContext()).load(searchResult.getThumbnailURL()).into(thumbnail);
             title.setText(searchResult.getTitle());
             duration.setText(searchResult.getDuration());
 
-            CheckBox checkBox = (CheckBox) convertView.findViewById(R.id.checkBox);
-            checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                public void onCheckedChanged(CompoundButton btn, boolean isChecked) {
-                    Log.d(TAG, "OnChecked changed to " + isChecked);
-                    itemChecked[position] = isChecked;
-                }
-            });
-
-            checkBox.setChecked(itemChecked[position]);
-
-            if (itemChecked[position]) {
-                convertView.setSelected(true);
-            }
             return convertView;
         }
 
@@ -208,7 +177,7 @@ public class RecentlyWatchedFragment extends Fragment {
 
         @Override
         public void swapItems(int i, int i1) {
-            VideoItem firstItem = getItem(i);
+            YouTubeVideo firstItem = getItem(i);
 
             recentlyPlayedVideos.set(i, getItem(i1));
             recentlyPlayedVideos.set(i1, firstItem);
@@ -235,14 +204,8 @@ public class RecentlyWatchedFragment extends Fragment {
 
     private class MyOnDismissCallback implements OnDismissCallback {
 
-        private final ArrayAdapter<VideoItem> mAdapter;
-
         @Nullable
         private Toast mToast;
-
-        MyOnDismissCallback(final ArrayAdapter<VideoItem> adapter) {
-            mAdapter = adapter;
-        }
 
         @Override
         public void onDismiss(@NonNull final ViewGroup listView, @NonNull final int[] reverseSortedPositions) {

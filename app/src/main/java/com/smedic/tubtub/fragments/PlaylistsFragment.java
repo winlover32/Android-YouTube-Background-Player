@@ -15,22 +15,31 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.CheckBox;
-import android.widget.CompoundButton;
+import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.auth.GoogleAuthException;
+import com.google.android.gms.auth.GoogleAuthUtil;
+import com.google.android.gms.auth.UserRecoverableAuthException;
+import com.google.api.services.youtube.YouTubeScopes;
 import com.nhaarman.listviewanimations.appearance.simple.SwingBottomInAnimationAdapter;
 import com.nhaarman.listviewanimations.itemmanipulation.DynamicListView;
 import com.nhaarman.listviewanimations.itemmanipulation.swipedismiss.undo.UndoAdapter;
 import com.nhaarman.listviewanimations.util.Swappable;
-import com.smedic.tubtub.PlaylistItem;
+import com.smedic.tubtub.BackgroundAudioService;
 import com.smedic.tubtub.R;
+import com.smedic.tubtub.YouTubePlaylist;
 import com.smedic.tubtub.YouTubeSearch;
+import com.smedic.tubtub.YouTubeVideo;
+import com.smedic.tubtub.interfaces.YouTubeVideosReceiver;
+import com.smedic.tubtub.utils.Config;
+import com.smedic.tubtub.utils.SnappyDb;
 import com.squareup.picasso.Picasso;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 import javax.annotation.Nullable;
@@ -38,11 +47,11 @@ import javax.annotation.Nullable;
 /**
  * Created by smedic on 7.3.16..
  */
-public class PlaylistsFragment extends Fragment {
+public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver {
 
     private static final String TAG = "SMEDIC PlaylistsFrag";
 
-    private ArrayList<PlaylistItem> playlists;
+    private ArrayList<YouTubePlaylist> playlists;
     private DynamicListView playlistsListView;
     private Handler handler;
     private PlaylistAdapter playlistsAdapter;
@@ -54,8 +63,9 @@ public class PlaylistsFragment extends Fragment {
     private static final int REQUEST_AUTHORIZATION = 3;
 
     private YouTubeSearch youTubeSearch;
-    private boolean[] itemChecked;
-    private Button searchPlaylistsButton;
+    private ImageButton searchPlaylistsButton;
+
+    private ProgressBar loadingProgressBar;
 
     public PlaylistsFragment() {
         // Required empty public constructor
@@ -65,8 +75,11 @@ public class PlaylistsFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        youTubeSearch = new YouTubeSearch(getActivity(), this, this);
+
         if (savedInstanceState != null) {
             mChosenAccountName = savedInstanceState.getString(ACCOUNT_KEY);
+            youTubeSearch.setAuthSelectedAccountName(mChosenAccountName);
         } else {
             loadAccount();
         }
@@ -76,9 +89,11 @@ public class PlaylistsFragment extends Fragment {
         SharedPreferences sp = PreferenceManager
                 .getDefaultSharedPreferences(getActivity());
         mChosenAccountName = sp.getString(ACCOUNT_KEY, null);
+        youTubeSearch.setAuthSelectedAccountName(mChosenAccountName);
     }
 
     private void saveAccount() {
+        Log.d(TAG, "Saving account name... " + mChosenAccountName);
         SharedPreferences sp = PreferenceManager
                 .getDefaultSharedPreferences(getActivity());
         sp.edit().putString(ACCOUNT_KEY, mChosenAccountName).commit();
@@ -92,27 +107,41 @@ public class PlaylistsFragment extends Fragment {
         /* Setup the ListView */
         playlistsListView = (DynamicListView) v.findViewById(R.id.playlists);
 
-        searchPlaylistsButton = (Button) v.findViewById(R.id.searchButton);
+        searchPlaylistsButton = (ImageButton) v.findViewById(R.id.loadButton);
+
+        loadingProgressBar = (ProgressBar) v.findViewById(R.id.loadingBar);
+        loadingProgressBar.setVisibility(View.INVISIBLE);
 
         playlists = new ArrayList<>();
         setupListViewAndAdapter();
 
         handler = new Handler();
-        itemChecked = new boolean[500];
 
         searchPlaylistsButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (getActivity() == null) {
-                    Log.e(TAG, "onActivityCreated - activity is null!");
-                } else {
-                    Log.d(TAG, "onActivityCreated search for playlists...");
-                    youTubeSearch = new YouTubeSearch(getActivity());
-                    mChosenAccountName = "vanste25@gmail.com";
-                    youTubeSearch.setAuthSelectedAccountName(mChosenAccountName);
-                    youTubeSearch.searchPlaylists(playlists, playlistsAdapter);
 
-                    searchPlaylistsButton.setVisibility(View.INVISIBLE);
+                if (mChosenAccountName == null) {
+                    chooseAccount();
+                } else {
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                String token = GoogleAuthUtil.getToken(getActivity(), mChosenAccountName,
+                                        "oauth2:" + YouTubeScopes.YOUTUBE);
+                                Log.d(TAG, "TOKEN " + token);
+                            } catch (IOException io) {
+
+                            } catch (UserRecoverableAuthException erae) {
+
+                            } catch (GoogleAuthException gae) {
+
+                            }
+                        }
+                    }).start();
+                    //loadingProgressBar.setVisibility(View.VISIBLE);
+                    youTubeSearch.searchPlaylists(playlists, playlistsAdapter);
                 }
             }
         });
@@ -121,16 +150,24 @@ public class PlaylistsFragment extends Fragment {
     }
 
     @Override
-    public void setUserVisibleHint(boolean visible){
-        super.setUserVisibleHint(visible);
+    public void onResume() {
+        super.onResume();
 
-        if (visible) {
-            //Log.d(TAG, "PlaylistsFragment is now visible!");
-        } else {
-            //Log.d(TAG, "PlaylistsFragment is now invisible!");
+        if (!getUserVisibleHint()) {
+            //do nothing for now
         }
 
-        if (visible && isResumed()){
+        playlists.clear();
+        playlists.addAll(SnappyDb.getInstance().getAllPlaylistItems());
+        playlistsAdapter.notifyDataSetChanged();
+    }
+
+
+    @Override
+    public void setUserVisibleHint(boolean visible) {
+        super.setUserVisibleHint(visible);
+
+        if (visible && isResumed()) {
             //Log.d(TAG, "PlaylistsFragment visible and resumed");
             //Only manually call onResume if fragment is already visible
             //Otherwise allow natural fragment lifecycle to call onResume
@@ -142,16 +179,13 @@ public class PlaylistsFragment extends Fragment {
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        Log.d(TAG, "on activity result");
         switch (requestCode) {
             case REQUEST_AUTHORIZATION:
-                Log.d(TAG, "on activity result 1");
                 if (resultCode != Activity.RESULT_OK) {
                     chooseAccount();
                 }
                 break;
             case REQUEST_ACCOUNT_PICKER:
-                Log.d(TAG, "on activity result 2");
                 if (resultCode == Activity.RESULT_OK && data != null
                         && data.getExtras() != null) {
                     String accountName = data.getExtras().getString(
@@ -161,20 +195,20 @@ public class PlaylistsFragment extends Fragment {
                         youTubeSearch.setAuthSelectedAccountName(accountName);
                         saveAccount();
                     }
+
+                    youTubeSearch.searchPlaylists(playlists, playlistsAdapter);
                 }
-                youTubeSearch.searchPlaylists(playlists, playlistsAdapter);
                 break;
         }
     }
 
     private void chooseAccount() {
-        Log.d(TAG, "choose account bre");
         startActivityForResult(youTubeSearch.getCredential().newChooseAccountIntent(),
                 REQUEST_ACCOUNT_PICKER);
     }
 
 
-    public void setupListViewAndAdapter(){
+    public void setupListViewAndAdapter() {
         playlistsAdapter = new PlaylistAdapter(getActivity());
         SwingBottomInAnimationAdapter animationAdapter = new SwingBottomInAnimationAdapter(playlistsAdapter);
         animationAdapter.setAbsListView(playlistsListView);
@@ -198,18 +232,15 @@ public class PlaylistsFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> av, View v, int pos,
                                     long id) {
-                Toast.makeText(getContext(), "Playing playlist: " + playlists.get(pos), Toast.LENGTH_SHORT).show();
-
-                //Intent serviceIntent = new Intent(getContext(), YouTubeService.class);
-                //serviceIntent.putExtra("YT_URL", searchResultsList.get(pos).getId());
-                //startService(serviceIntent);
+                Toast.makeText(getContext(), "Playing playlist: " + playlists.get(pos).getTitle(), Toast.LENGTH_SHORT).show();
+                youTubeSearch.acquirePlaylistVideos(playlists.get(pos).getId()); //results are in receive callback method
             }
         });
 
     }
 
-    public class PlaylistAdapter extends ArrayAdapter<PlaylistItem> implements Swappable, UndoAdapter  {
-        public PlaylistAdapter(Activity context){
+    public class PlaylistAdapter extends ArrayAdapter<YouTubePlaylist> implements Swappable, UndoAdapter {
+        public PlaylistAdapter(Activity context) {
             super(context, R.layout.video_item, playlists);
         }
 
@@ -224,26 +255,13 @@ public class PlaylistsFragment extends Fragment {
             TextView videosNumber = (TextView) convertView.findViewById(R.id.videos_number);
             TextView privacy = (TextView) convertView.findViewById(R.id.privacy);
 
-            PlaylistItem searchResult = playlists.get(position);
+            YouTubePlaylist searchResult = playlists.get(position);
 
             Picasso.with(getContext()).load(searchResult.getThumbnailURL()).into(thumbnail);
             title.setText(searchResult.getTitle());
             videosNumber.setText("Number of videos: " + String.valueOf(searchResult.getNumberOfVideos()));
             privacy.setText("Status: " + searchResult.getStatus());
 
-            CheckBox checkBox = (CheckBox) convertView.findViewById(R.id.checkBox);
-            checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                public void onCheckedChanged(CompoundButton btn, boolean isChecked) {
-                    Log.d(TAG, "OnChecked changed to " + isChecked);
-                    itemChecked[position] = isChecked;
-                }
-            });
-
-            checkBox.setChecked(itemChecked[position]);
-
-            if (itemChecked[position]) {
-                convertView.setSelected(true);
-            }
             return convertView;
         }
 
@@ -261,7 +279,7 @@ public class PlaylistsFragment extends Fragment {
 
         @Override
         public void swapItems(int i, int i1) {
-            PlaylistItem firstItem = getItem(i);
+            YouTubePlaylist firstItem = getItem(i);
 
             playlists.set(i, getItem(i1));
             playlists.set(i1, firstItem);
@@ -284,5 +302,18 @@ public class PlaylistsFragment extends Fragment {
         public View getUndoClickView(@NonNull View view) {
             return view.findViewById(R.id.undo_row_undobutton);
         }
+    }
+
+    /**
+     * Called when playlist items are received
+     * @param youTubeVideos - list to be played in background service
+     */
+    @Override
+    public void receive(ArrayList<YouTubeVideo> youTubeVideos){
+        Intent serviceIntent = new Intent(getContext(), BackgroundAudioService.class);
+        serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
+        serviceIntent.putExtra(Config.YOUTUBE_MEDIA_TYPE, Config.YOUTUBE_PLAYLIST);
+        serviceIntent.putExtra(Config.YOUTUBE_TYPE_PLAYLIST, youTubeVideos);
+        getActivity().startService(serviceIntent);
     }
 }

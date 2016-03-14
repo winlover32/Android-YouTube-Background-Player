@@ -3,7 +3,8 @@ package com.smedic.tubtub.utils;
 import android.content.Context;
 import android.util.Log;
 
-import com.smedic.tubtub.VideoItem;
+import com.smedic.tubtub.YouTubePlaylist;
+import com.smedic.tubtub.YouTubeVideo;
 import com.snappydb.DB;
 import com.snappydb.DBFactory;
 import com.snappydb.SnappydbException;
@@ -16,7 +17,8 @@ import java.util.ArrayList;
 public class SnappyDb {
 
     private static final String TAG = "SMEDIC SNAPPY DB";
-    private static final String KEY_PREFIX = "yt_id:";
+    private static String KEY_PREFIX_VIDEO = "yt_id:";
+    private static String KEY_PREFIX_PLAYLIST = "yt_pl_id:";
     private DB snappyDB;
     private boolean isInitialized = false;
 
@@ -40,12 +42,12 @@ public class SnappyDb {
         return true;
     }
 
-    public boolean insertVideo(VideoItem item) {
+    public boolean insert(YouTubeVideo item) {
         if (!isInitialized) return false;
 
         try {
-            snappyDB.put(KEY_PREFIX + item.getId(), item);
-            Log.d(TAG, "Inserted video: " + KEY_PREFIX + item.getId() + ", DB size: " + snappyDB.countKeys(KEY_PREFIX));
+            snappyDB.put(KEY_PREFIX_VIDEO + item.getId(), item);
+            Log.d(TAG, "Inserted video: " + KEY_PREFIX_VIDEO + item.getId() + ", DB size: " + snappyDB.countKeys(KEY_PREFIX_VIDEO));
         } catch (SnappydbException e) {
             e.printStackTrace();
             return false;
@@ -53,31 +55,78 @@ public class SnappyDb {
         return true;
     }
 
-    public VideoItem getVideoItem(String key) {
-        if (!isInitialized) return new VideoItem(); //TODO reconsider
+    public boolean insertPlaylist(YouTubePlaylist item) {
+        Log.d(TAG, "insert playlist");
+        if (!isInitialized) return false;
 
-        if (!key.contains(KEY_PREFIX)) { //if key does not contain "magic" word, add it
-            key = KEY_PREFIX + key;
+        try {
+            snappyDB.put(KEY_PREFIX_PLAYLIST + item.getId(), item);
+            Log.d(TAG, "Inserted playlist: " + KEY_PREFIX_PLAYLIST + item.getId() + ", DB size: " + snappyDB.countKeys(KEY_PREFIX_PLAYLIST));
+        } catch (SnappydbException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
+    public YouTubeVideo getVideoItem(String key) {
+        if (!isInitialized) return new YouTubeVideo(); //TODO reconsider
+
+        if (!key.contains(KEY_PREFIX_VIDEO)) { //if key does not contain "magic" word, add it
+            key = KEY_PREFIX_VIDEO + key;
         }
 
-        VideoItem videoItem = null;
+        YouTubeVideo videoItem = null;
         try {
-            videoItem = snappyDB.getObject(key, VideoItem.class);
-            //Log.d(TAG, "Got video: " + key + ", DB size: " + snappyDB.countKeys(KEY_PREFIX));
+            videoItem = snappyDB.getObject(key, YouTubeVideo.class);
+            //Log.d(TAG, "Got video: " + key + ", DB size: " + snappyDB.countKeys(KEY_PREFIX_VIDEO));
         } catch (SnappydbException e) {
             e.printStackTrace();
         }
         return videoItem;
     }
 
-    public ArrayList<VideoItem> getAllVideoItems() {
+    public YouTubePlaylist getPlaylistItem(String key) {
+        if (!isInitialized) return new YouTubePlaylist(); //TODO reconsider
+
+        if (!key.contains(KEY_PREFIX_PLAYLIST)) { //if key does not contain "magic" word, add it
+            key = KEY_PREFIX_PLAYLIST + key;
+        }
+
+        YouTubePlaylist playlistItem = null;
+        try {
+            playlistItem = snappyDB.getObject(key, YouTubePlaylist.class);
+            //Log.d(TAG, "Got video: " + key + ", DB size: " + snappyDB.countKeys(KEY_PREFIX_VIDEO));
+        } catch (SnappydbException e) {
+            e.printStackTrace();
+        }
+        return playlistItem;
+    }
+
+    public ArrayList<YouTubeVideo> getAllVideoItems() {
         if (!isInitialized) return new ArrayList<>();
 
-        ArrayList<VideoItem> outList = new ArrayList<>();
+        ArrayList<YouTubeVideo> outList = new ArrayList<>();
         try {
-            String[] keys = snappyDB.findKeys(KEY_PREFIX);
+            String[] keys = snappyDB.findKeys(KEY_PREFIX_VIDEO);
             for (int i = 0; i < keys.length; i++) {
-                VideoItem tempItem = getVideoItem(keys[i]);
+                YouTubeVideo tempItem = getVideoItem(keys[i]);
+                outList.add(tempItem);
+            }
+        } catch (SnappydbException e) {
+            e.printStackTrace();
+        }
+        return outList;
+    }
+
+    public ArrayList<YouTubePlaylist> getAllPlaylistItems() {
+        if (!isInitialized) return new ArrayList<>();
+
+        ArrayList<YouTubePlaylist> outList = new ArrayList<>();
+        try {
+            String[] keys = snappyDB.findKeys(KEY_PREFIX_PLAYLIST);
+            for (int i = 0; i < keys.length; i++) {
+                YouTubePlaylist tempItem = getPlaylistItem(keys[i]);
                 outList.add(tempItem);
             }
         } catch (SnappydbException e) {
@@ -89,8 +138,20 @@ public class SnappyDb {
     public boolean removeVideo(String key) {
         if (!isInitialized) return false;
         try {
-            snappyDB.del(KEY_PREFIX + key);
-            Log.d(TAG, "Removed video: " + KEY_PREFIX + key + ", DB size: " + snappyDB.countKeys(KEY_PREFIX));
+            snappyDB.del(KEY_PREFIX_VIDEO + key);
+            Log.d(TAG, "Removed video: " + KEY_PREFIX_VIDEO + key + ", DB size: " + snappyDB.countKeys(KEY_PREFIX_VIDEO));
+        } catch (SnappydbException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
+    public boolean removePlaylist(String key) {
+        if (!isInitialized) return false;
+        try {
+            snappyDB.del(KEY_PREFIX_PLAYLIST+ key);
+            Log.d(TAG, "Removed Playlist: " + KEY_PREFIX_PLAYLIST + key + ", DB size: " + snappyDB.countKeys(KEY_PREFIX_PLAYLIST));
         } catch (SnappydbException e) {
             e.printStackTrace();
             return false;
@@ -102,7 +163,22 @@ public class SnappyDb {
         if (!isInitialized) return false;
 
         try {
-            String[] keys = snappyDB.findKeys(KEY_PREFIX);
+            String[] keys = snappyDB.findKeys(KEY_PREFIX_VIDEO);
+            for (int i = 0; i < keys.length; i++) {
+                snappyDB.del(keys[i]);
+            }
+        } catch (SnappydbException e) {
+            e.printStackTrace();
+        }
+
+        return true;
+    }
+
+    public boolean removeAllPlaylists() {
+        if (!isInitialized) return false;
+
+        try {
+            String[] keys = snappyDB.findKeys(KEY_PREFIX_PLAYLIST);
             for (int i = 0; i < keys.length; i++) {
                 snappyDB.del(keys[i]);
             }

@@ -3,8 +3,8 @@
     android:id="@+id/row_item"
     android:layout_width="match_parent"
     android:layout_height="120dp"
-    android:descendantFocusability="blocksDescendants"
     android:background="?android:attr/activatedBackgroundIndicator"
+    android:descendantFocusability="blocksDescendants"
     android:orientation="horizontal"
     android:padding="16dp">
 
@@ -38,6 +38,7 @@
             android:maxLines="1"
             android:textSize="12sp"
             android:textStyle="bold" />
+
         <TextView
             android:id="@+id/privacy"
             android:layout_width="wrap_content"
@@ -48,10 +49,4 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <CheckBox
-        android:id="@+id/checkBox"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:theme="@android:style/Theme.Holo.Light"
-        android:layout_weight="10" />
 </LinearLayout>

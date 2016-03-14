@@ -5,7 +5,11 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.ListFragment;
 import android.util.Log;
+import android.util.SparseBooleanArray;
+import android.view.ActionMode;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
@@ -17,9 +21,10 @@ import com.nhaarman.listviewanimations.appearance.simple.SwingBottomInAnimationA
 import com.nhaarman.listviewanimations.itemmanipulation.DynamicListView;
 import com.smedic.tubtub.BackgroundAudioService;
 import com.smedic.tubtub.R;
-import com.smedic.tubtub.VideoItem;
 import com.smedic.tubtub.VideosAdapter;
 import com.smedic.tubtub.YouTubeSearch;
+import com.smedic.tubtub.YouTubeVideo;
+import com.smedic.tubtub.interfaces.YouTubeVideosReceiver;
 import com.smedic.tubtub.utils.Config;
 import com.smedic.tubtub.utils.SnappyDb;
 
@@ -28,12 +33,12 @@ import java.util.ArrayList;
 /**
  * Created by smedic on 7.3.16..
  */
-public class SearchFragment extends ListFragment {
+public class SearchFragment extends ListFragment implements YouTubeVideosReceiver {
 
-    private static final String TAG = "SMEDIC SEARCH FRAGMENT";
+    private static final String TAG = "SMEDIC search frag";
     private DynamicListView videosFoundListView;
     private Handler handler;
-    private ArrayList<VideoItem> searchResultsList;
+    private ArrayList<YouTubeVideo> searchResultsList;
     private VideosAdapter videoListAdapter;
     private int preLast = 0;
     private YouTubeSearch youTubeSearch;
@@ -55,8 +60,6 @@ public class SearchFragment extends ListFragment {
         // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_search, container, false);
 
-        Log.d(TAG, "onCreateView");
-
         handler = new Handler();
         searchResultsList = new ArrayList<>();
 
@@ -67,14 +70,7 @@ public class SearchFragment extends ListFragment {
     public void setUserVisibleHint(boolean visible) {
         super.setUserVisibleHint(visible);
 
-        if (visible) {
-            Log.d(TAG, "SearchFragment is now visible!");
-        } else {
-            //Log.d(TAG, "SearchFragment is now invisible!");
-        }
-
         if (visible && isResumed()) {
-            //Log.d(TAG, "SearchFragment visible and resumed");
             //Only manually call onResume if fragment is already visible
             //Otherwise allow natural fragment lifecycle to call onResume
             onResume();
@@ -86,10 +82,9 @@ public class SearchFragment extends ListFragment {
         super.onResume();
 
         if (!getUserVisibleHint()) {
-            //Log.d(TAG, "not getUserVisibleHint");
-            //return;
+            //do nothing for now
         }
-        youTubeSearch = new YouTubeSearch(getActivity());
+        youTubeSearch = new YouTubeSearch(getActivity(), this, this);
         youTubeSearch.buildYouTube0();
     }
 
@@ -101,7 +96,6 @@ public class SearchFragment extends ListFragment {
         videosFoundListView = (DynamicListView) getListView();
 
         setupAdapter();
-
         addListeners();
     }
 
@@ -125,7 +119,7 @@ public class SearchFragment extends ListFragment {
         if (!searchResultsList.isEmpty()) {
             searchResultsList.clear();
         }
-        youTubeSearch.searchOnYoutube2(query, searchResultsList, videoListAdapter);
+        youTubeSearch.searchVideos(query, searchResultsList, videoListAdapter);
     }
 
     private void addListeners() {
@@ -135,15 +129,91 @@ public class SearchFragment extends ListFragment {
             @Override
             public void onItemClick(AdapterView<?> av, View v, int pos,
                                     long id) {
-                SnappyDb.getInstance().insertVideo(searchResultsList.get(pos));
+                Toast.makeText(getContext(), "Playing: " + searchResultsList.get(pos).getTitle(), Toast.LENGTH_SHORT).show();
 
-                Toast.makeText(getContext(), "Playing: " + searchResultsList.get(pos), Toast.LENGTH_SHORT).show();
+                SnappyDb.getInstance().insert(searchResultsList.get(pos));
 
                 Intent serviceIntent = new Intent(getContext(), BackgroundAudioService.class);
                 serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
-                serviceIntent.putExtra("YT_MEDIA_TYPE", Config.YOUTUBE_VIDEO);
-                serviceIntent.putExtra("YT_VIDEO", searchResultsList.get(pos).getId());
+                serviceIntent.putExtra(Config.YOUTUBE_MEDIA_TYPE, Config.YOUTUBE_VIDEO);
+                serviceIntent.putExtra(Config.YOUTUBE_TYPE_VIDEO, searchResultsList.get(pos));
                 getActivity().startService(serviceIntent);
+            }
+        });
+
+
+        videosFoundListView.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+
+                return true;
+            }
+        });
+
+        videosFoundListView.setMultiChoiceModeListener(new AbsListView.MultiChoiceModeListener() {
+            @Override
+            public void onItemCheckedStateChanged(ActionMode mode, int position, long id, boolean checked) {
+                //MenuItem item = mode.getMenu().getItem(R.id.menu_item_play);
+                final int checkedCount = videosFoundListView.getCheckedItemCount();
+                switch (checkedCount) {
+                    case 0:
+                        //item.setVisible(false);
+                        mode.setSubtitle("1 item selected");
+                        break;
+                    default:
+                        //item.setVisible(true);
+                        mode.setSubtitle(checkedCount + " items selected");
+                        break;
+                }
+            }
+
+            @Override
+            public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+                mode.getMenuInflater().inflate(R.menu.menu_main, menu);
+                MenuItem item = menu.findItem(R.id.menu_item_play);
+                item.setVisible(false);
+
+                return true;
+            }
+
+            @Override
+            public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+                return true;
+            }
+
+            @Override
+            public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+                Log.d(TAG, "onActionItemClicked");
+                switch (item.getItemId()) {
+                    case R.id.menu_item_play:
+                        Toast.makeText(getContext(), "Playing " + videosFoundListView.getCheckedItemCount() +
+                                " items", Toast.LENGTH_SHORT).show();
+                        ArrayList<YouTubeVideo> youTubeVideos = new ArrayList<>();
+
+                        SparseBooleanArray checked = videosFoundListView.getCheckedItemPositions();
+                        for (int i = 0; i < videosFoundListView.getAdapter().getCount(); i++) {
+                            if (checked.get(i)) {
+                                SnappyDb.getInstance().insert(searchResultsList.get(i));
+                                youTubeVideos.add(searchResultsList.get(i));
+                            }
+                        }
+                        Log.d(TAG, "Video list length: " + youTubeVideos.size());
+
+                        Intent serviceIntent = new Intent(getContext(), BackgroundAudioService.class);
+                        serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
+                        serviceIntent.putExtra("YT_MEDIA_TYPE", Config.YOUTUBE_PLAYLIST);
+                        serviceIntent.putExtra("YT_PLAYLIST", youTubeVideos);
+                        getActivity().startService(serviceIntent);
+
+                        mode.finish();
+                        break;
+                }
+                return true;
+            }
+
+            @Override
+            public void onDestroyActionMode(ActionMode mode) {
+
             }
         });
 
@@ -180,4 +250,8 @@ public class SearchFragment extends ListFragment {
         });
     }
 
+    @Override
+    public void receive(ArrayList<YouTubeVideo> youTubeVideos) {
+
+    }
 }

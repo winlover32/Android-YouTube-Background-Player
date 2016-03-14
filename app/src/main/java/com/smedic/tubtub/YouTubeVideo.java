@@ -5,32 +5,23 @@ import java.io.Serializable;
 /**
  * Created by smedic on 3.2.16..
  */
-public class VideoItem implements Serializable {
-    private String title;
-    //private String description;
-    private String thumbnailURL;
+public class YouTubeVideo implements Serializable {
     private String id;
+    private String title;
+    private String thumbnailURL;
     private String duration;
 
-    public VideoItem() {
+    public YouTubeVideo() {
+        this.id = "";
         this.title = "";
         this.thumbnailURL = "";
-        this.id = "";
         this.duration = "";
     }
 
-    public VideoItem(String title, String thumbnailURL, String id, String duration) {
+    public YouTubeVideo(String id, String title, String thumbnailURL, String duration) {
+        this.id = id;
         this.title = title;
         this.thumbnailURL = thumbnailURL;
-        this.id = id;
-        this.duration = duration;
-    }
-
-    public String getDuration() {
-        return duration;
-    }
-
-    public void setDuration(String duration) {
         this.duration = duration;
     }
 
@@ -42,6 +33,14 @@ public class VideoItem implements Serializable {
         this.id = id;
     }
 
+    public String getDuration() {
+        return duration;
+    }
+
+    public void setDuration(String duration) {
+        this.duration = duration;
+    }
+
     public String getTitle() {
         return title;
     }
@@ -49,9 +48,6 @@ public class VideoItem implements Serializable {
     public void setTitle(String title) {
         this.title = title;
     }
-
-    //public String getDescription() { return description; }
-    //public void setDescription(String description) { this.description = description; }
 
     public String getThumbnailURL() {
         return thumbnailURL;
@@ -63,7 +59,7 @@ public class VideoItem implements Serializable {
 
     @Override
     public String toString() {
-        return "VideoItem {" +
+        return "YouTubeVideo {" +
                 "id='" + id + '\'' +
                 ", title='" + title + '\'' +
                 '}';

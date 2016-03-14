@@ -1,12 +1,9 @@
 package com.smedic.tubtub;
 
 import android.app.Activity;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -17,19 +14,15 @@ import java.util.List;
 /**
  * Created by smedic on 8.2.16..
  */
-public class VideosAdapter extends ArrayAdapter<VideoItem> {
-
-    private final static String TAG = "SMEDIC VideosAdapter";
-    private boolean[] itemChecked;
+public class VideosAdapter extends ArrayAdapter<YouTubeVideo> {
 
     private Activity context;
-    private final List<VideoItem> list;
+    private final List<YouTubeVideo> list;
 
-    public VideosAdapter(Activity context, List<VideoItem> list) {
+    public VideosAdapter(Activity context, List<YouTubeVideo> list) {
         super(context, R.layout.video_item, list);
         this.list = list;
         this.context = context;
-        itemChecked = new boolean[500];
     }
 
     @Override
@@ -42,25 +35,12 @@ public class VideosAdapter extends ArrayAdapter<VideoItem> {
         TextView title = (TextView) convertView.findViewById(R.id.video_title);
         TextView duration = (TextView) convertView.findViewById(R.id.video_duration);
 
-        VideoItem searchResult = list.get(position);
+        YouTubeVideo searchResult = list.get(position);
 
         Picasso.with(context).load(searchResult.getThumbnailURL()).into(thumbnail);
         title.setText(searchResult.getTitle());
         duration.setText(searchResult.getDuration());
 
-        CheckBox checkBox = (CheckBox) convertView.findViewById(R.id.checkBox);
-        checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            public void onCheckedChanged(CompoundButton btn, boolean isChecked) {
-                Log.d(TAG, "OnChecked changed to " + isChecked);
-                itemChecked[position] = isChecked;
-            }
-        });
-
-        checkBox.setChecked(itemChecked[position]);
-
-        if (itemChecked[position]) {
-            convertView.setSelected(true);
-        }
         return convertView;
     }
 }

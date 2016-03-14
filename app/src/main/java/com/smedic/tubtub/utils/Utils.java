@@ -1,5 +1,12 @@
 package com.smedic.tubtub.utils;
 
+import android.util.Log;
+
+import com.smedic.tubtub.YouTubeVideo;
+
+import java.util.Iterator;
+import java.util.List;
+
 /**
  * Created by smedic on 4.2.16..
  */
@@ -47,6 +54,35 @@ public class Utils {
             str = "0" + str;
         }
         return str;
+    }
+
+    public static void prettyPrintVideos(List<YouTubeVideo> videos) {
+        Log.d(TAG, "=============================================================");
+        Log.d(TAG, "\t\tTotal Videos Uploaded: " + videos.size());
+        Log.d(TAG, "=============================================================\n");
+
+        Iterator<YouTubeVideo> playlistEntries = videos.iterator();
+
+        while (playlistEntries.hasNext()) {
+            YouTubeVideo playlistItem = playlistEntries.next();
+            Log.d(TAG, " video name  = " + playlistItem.getTitle());
+            Log.d(TAG, " video id    = " + playlistItem.getId());
+            Log.d(TAG, " duration    = " + playlistItem.getDuration());
+            Log.d(TAG, " thumbnail   = " + playlistItem.getThumbnailURL());
+            Log.d(TAG, "\n-------------------------------------------------------------\n");
+        }
+    }
+
+    public static void prettyPrintVideoItem(YouTubeVideo playlistEntry) {
+        Log.d(TAG, "*************************************************************");
+        Log.d(TAG, "\t\tItem:");
+        Log.d(TAG, "*************************************************************");
+
+        Log.d(TAG, " video name  = " + playlistEntry.getTitle());
+        Log.d(TAG, " video id    = " + playlistEntry.getId());
+        Log.d(TAG, " duration    = " + playlistEntry.getDuration());
+        Log.d(TAG, " thumbnail   = " + playlistEntry.getThumbnailURL());
+        Log.d(TAG, "\n*************************************************************\n");
     }
 
 }

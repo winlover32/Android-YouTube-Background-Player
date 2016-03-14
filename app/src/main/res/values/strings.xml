@@ -30,4 +30,6 @@
     <string name="removed_positions">Removed</string>
     <string name="taptoundo">Tap to undo</string>
     <string name="itemdeleted">Item deleted</string>
+    <string name="load_playlists">Load</string>
+    <string name="user_playlist">User\'s playlists</string>
 </resources>
