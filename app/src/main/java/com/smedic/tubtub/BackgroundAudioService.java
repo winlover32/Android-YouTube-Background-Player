@@ -51,6 +51,8 @@ public class BackgroundAudioService extends Service {
     private MediaSessionCompat mSession;
     private MediaControllerCompat mController;
 
+    private int mediaType = Config.YOUTUBE_NO_NEW_REQUEST;
+
     private YouTubeVideo videoItem;
 
     private boolean isStarting = false;
@@ -124,12 +126,14 @@ public class BackgroundAudioService extends Service {
 
     private void handleMedia(Intent intent) {
 
-        int mediaType = intent.getIntExtra(Config.YOUTUBE_MEDIA_TYPE, Config.YOUTUBE_NO_NEW_REQUEST);
+        mediaType = intent.getIntExtra(Config.YOUTUBE_MEDIA_TYPE, Config.YOUTUBE_NO_NEW_REQUEST);
+
         switch (mediaType) {
             case Config.YOUTUBE_NO_NEW_REQUEST: //video is paused,so no new playback requests should be processed
                 mMediaPlayer.start();
                 break;
             case Config.YOUTUBE_VIDEO:
+
                 YouTubeVideo youTubeVideo = (YouTubeVideo) intent.getSerializableExtra(Config.YOUTUBE_TYPE_VIDEO);
                 if (youTubeVideo.getId() != null) {
                     playVideo(youTubeVideo);
@@ -298,10 +302,24 @@ public class BackgroundAudioService extends Service {
                         }
                     });
         }
-        builder.addAction(generateAction(android.R.drawable.ic_media_previous, "Previous", ACTION_PREVIOUS));
+
+        if(mediaType == Config.YOUTUBE_PLAYLIST) {
+            Log.d(TAG, "PLAYLIST ?!?!?");
+            builder.addAction(generateAction(android.R.drawable.ic_media_previous, "Previous", ACTION_PREVIOUS));
+        } else {
+            Log.d(TAG, "PLAYLIST ?!?!? NOT?");
+            builder.addAction(0, null, null);
+        }
+
         builder.addAction(action);
-        builder.addAction(generateAction(android.R.drawable.ic_media_next, "Next", ACTION_NEXT));
-        style.setShowActionsInCompactView(0, 1, 2, 3, 4);
+
+        if(mediaType == Config.YOUTUBE_PLAYLIST) {
+            builder.addAction(generateAction(android.R.drawable.ic_media_next, "Next", ACTION_NEXT));
+        } else {
+            builder.addAction(0, null, null);
+        }
+
+        style.setShowActionsInCompactView(0, 1, 2);
 
         //Notification notification = builder.build();
         //startForeground(R.string.app_name, notification);

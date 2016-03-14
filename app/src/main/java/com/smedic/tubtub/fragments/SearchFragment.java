@@ -5,11 +5,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.ListFragment;
 import android.util.Log;
-import android.util.SparseBooleanArray;
-import android.view.ActionMode;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
@@ -85,7 +81,6 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
             //do nothing for now
         }
         youTubeSearch = new YouTubeSearch(getActivity(), this, this);
-        youTubeSearch.buildYouTube0();
     }
 
     @Override
@@ -150,7 +145,7 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
             }
         });
 
-        videosFoundListView.setMultiChoiceModeListener(new AbsListView.MultiChoiceModeListener() {
+        /*videosFoundListView.setMultiChoiceModeListener(new AbsListView.MultiChoiceModeListener() {
             @Override
             public void onItemCheckedStateChanged(ActionMode mode, int position, long id, boolean checked) {
                 //MenuItem item = mode.getMenu().getItem(R.id.menu_item_play);
@@ -215,7 +210,7 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
             public void onDestroyActionMode(ActionMode mode) {
 
             }
-        });
+        });*/
 
         videosFoundListView.setOnScrollListener(new AbsListView.OnScrollListener() {
             @Override
