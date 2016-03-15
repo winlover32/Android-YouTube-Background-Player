@@ -15,7 +15,7 @@
  */
 package com.smedic.tubtub;
 
-import java.io.Serializable; 
+import java.io.Serializable;
 
 /**
  * YouTube video class
