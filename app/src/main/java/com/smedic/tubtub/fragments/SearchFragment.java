@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2016 SMedic
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.smedic.tubtub.fragments;
 
 import android.content.Intent;
@@ -8,7 +23,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
@@ -27,6 +41,7 @@ import com.smedic.tubtub.utils.SnappyDb;
 import java.util.ArrayList;
 
 /**
+ * Class that handles list of the videos searched on YouTube
  * Created by smedic on 7.3.16..
  */
 public class SearchFragment extends ListFragment implements YouTubeVideosReceiver {
@@ -56,6 +71,9 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
         // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_search, container, false);
 
+        loadingProgressBar = (ProgressBar) v.findViewById(R.id.progressBar);
+        loadingProgressBar.setVisibility(View.INVISIBLE);
+
         handler = new Handler();
         searchResultsList = new ArrayList<>();
 
@@ -80,20 +98,24 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
         if (!getUserVisibleHint()) {
             //do nothing for now
         }
-        youTubeSearch = new YouTubeSearch(getActivity(), this, this);
+        //4th parameter is null, because playlists are not needed to this fragment
+        youTubeSearch = new YouTubeSearch(getActivity(), this);
+        youTubeSearch.setYouTubeVideosReceiver(this);
     }
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
-        loadingProgressBar = new ProgressBar(getContext());
         videosFoundListView = (DynamicListView) getListView();
 
         setupAdapter();
         addListeners();
     }
 
+    /**
+     * Setups custom adapter which enables animations when adding elements
+     */
     private void setupAdapter() {
         videoListAdapter = new VideosAdapter(getActivity(), searchResultsList);
         SwingBottomInAnimationAdapter animationAdapter = new SwingBottomInAnimationAdapter(videoListAdapter);
@@ -101,6 +123,10 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
         videosFoundListView.setAdapter(animationAdapter);
     }
 
+    /**
+     * Search for query on youTube by using YouTube Data API V3
+     * @param query
+     */
     public void searchQuery(String query) {
         Log.d(TAG, "Search query: " + query);
         if (searchQuery != null) {
@@ -114,9 +140,15 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
         if (!searchResultsList.isEmpty()) {
             searchResultsList.clear();
         }
-        youTubeSearch.searchVideos(query, searchResultsList, videoListAdapter);
+
+        Log.d(TAG, "SET IT VISIBLE");
+        loadingProgressBar.setVisibility(View.VISIBLE);
+        youTubeSearch.searchVideos(query);
     }
 
+    /**
+     * Adds listener for item list selection and starts BackgroundAudioService
+     */
     private void addListeners() {
 
         videosFoundListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -135,118 +167,24 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
                 getActivity().startService(serviceIntent);
             }
         });
-
-
-        videosFoundListView.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-
-                return true;
-            }
-        });
-
-        /*videosFoundListView.setMultiChoiceModeListener(new AbsListView.MultiChoiceModeListener() {
-            @Override
-            public void onItemCheckedStateChanged(ActionMode mode, int position, long id, boolean checked) {
-                //MenuItem item = mode.getMenu().getItem(R.id.menu_item_play);
-                final int checkedCount = videosFoundListView.getCheckedItemCount();
-                switch (checkedCount) {
-                    case 0:
-                        //item.setVisible(false);
-                        mode.setSubtitle("1 item selected");
-                        break;
-                    default:
-                        //item.setVisible(true);
-                        mode.setSubtitle(checkedCount + " items selected");
-                        break;
-                }
-            }
-
-            @Override
-            public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-                mode.getMenuInflater().inflate(R.menu.menu_main, menu);
-                MenuItem item = menu.findItem(R.id.menu_item_play);
-                item.setVisible(false);
-
-                return true;
-            }
-
-            @Override
-            public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-                return true;
-            }
-
-            @Override
-            public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-                Log.d(TAG, "onActionItemClicked");
-                switch (item.getItemId()) {
-                    case R.id.menu_item_play:
-                        Toast.makeText(getContext(), "Playing " + videosFoundListView.getCheckedItemCount() +
-                                " items", Toast.LENGTH_SHORT).show();
-                        ArrayList<YouTubeVideo> youTubeVideos = new ArrayList<>();
-
-                        SparseBooleanArray checked = videosFoundListView.getCheckedItemPositions();
-                        for (int i = 0; i < videosFoundListView.getAdapter().getCount(); i++) {
-                            if (checked.get(i)) {
-                                SnappyDb.getInstance().insert(searchResultsList.get(i));
-                                youTubeVideos.add(searchResultsList.get(i));
-                            }
-                        }
-                        Log.d(TAG, "Video list length: " + youTubeVideos.size());
-
-                        Intent serviceIntent = new Intent(getContext(), BackgroundAudioService.class);
-                        serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
-                        serviceIntent.putExtra("YT_MEDIA_TYPE", Config.YOUTUBE_PLAYLIST);
-                        serviceIntent.putExtra("YT_PLAYLIST", youTubeVideos);
-                        getActivity().startService(serviceIntent);
-
-                        mode.finish();
-                        break;
-                }
-                return true;
-            }
-
-            @Override
-            public void onDestroyActionMode(ActionMode mode) {
-
-            }
-        });*/
-
-        videosFoundListView.setOnScrollListener(new AbsListView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(AbsListView view, int scrollState) {
-                //Log.d(TAG, "onScrollStateChanged");
-            }
-
-            @Override
-            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-                switch (view.getId()) {
-                    case android.R.id.list:
-
-                        // Sample calculation to determine if the last item is fully visible.
-                        final int lastItem = firstVisibleItem + visibleItemCount;
-                        if (lastItem > 500) {
-                            //videosFoundListView.removeFooterView(loadingProgressBar);
-                            Toast.makeText(getContext(), "No more videos", Toast.LENGTH_SHORT).show();
-                        }
-
-                        if (lastItem == totalItemCount) {
-                            if (preLast != lastItem && lastItem < 500) { //avoid multiple calls for last item and loading more than 500 videos - google restriction
-                                //if (videosFoundListView.getFooterViewsCount() == 0) {
-                                //    videosFoundListView.addFooterView(loadingProgressBar);
-                                //}
-                                Log.d(TAG, "Last. Search the same query");
-                                //searchQuery(searchQuery);
-                                preLast = lastItem;
-                            }
-                        }
-                }
-            }
-        });
     }
 
+    /**
+     * Called when video items are received
+     *
+     * @param youTubeVideos - videos to be shown in list view
+     */
     @Override
-    public void receive(ArrayList<YouTubeVideo> youTubeVideos) {
+    public void onVideosReceived(ArrayList<YouTubeVideo> youTubeVideos) {
+        searchResultsList.addAll(youTubeVideos);
 
+        handler.post(new Runnable() {
+            public void run() {
+                if (videoListAdapter != null) {
+                    videoListAdapter.notifyDataSetChanged();
+                    loadingProgressBar.setVisibility(View.INVISIBLE);
+                }
+            }
+        });
     }
 }

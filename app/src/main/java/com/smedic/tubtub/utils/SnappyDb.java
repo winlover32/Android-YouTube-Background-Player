@@ -12,6 +12,8 @@ import com.snappydb.SnappydbException;
 import java.util.ArrayList;
 
 /**
+ * Wrapper class for SnappyDB NoSql database
+ * Enables adding and removing videos and playlists from DB
  * Created by smedic on 9.2.16..
  */
 public class SnappyDb {
@@ -47,7 +49,8 @@ public class SnappyDb {
 
         try {
             snappyDB.put(KEY_PREFIX_VIDEO + item.getId(), item);
-            Log.d(TAG, "Inserted video: " + KEY_PREFIX_VIDEO + item.getId() + ", DB size: " + snappyDB.countKeys(KEY_PREFIX_VIDEO));
+            if (Config.DEBUG)
+                Log.d(TAG, "Inserted video: " + KEY_PREFIX_VIDEO + item.getId() + ", DB size: " + snappyDB.countKeys(KEY_PREFIX_VIDEO));
         } catch (SnappydbException e) {
             e.printStackTrace();
             return false;
@@ -56,12 +59,12 @@ public class SnappyDb {
     }
 
     public boolean insertPlaylist(YouTubePlaylist item) {
-        Log.d(TAG, "insert playlist");
         if (!isInitialized) return false;
 
         try {
             snappyDB.put(KEY_PREFIX_PLAYLIST + item.getId(), item);
-            Log.d(TAG, "Inserted playlist: " + KEY_PREFIX_PLAYLIST + item.getId() + ", DB size: " + snappyDB.countKeys(KEY_PREFIX_PLAYLIST));
+            if (Config.DEBUG)
+                Log.d(TAG, "Inserted playlist: " + KEY_PREFIX_PLAYLIST + item.getId() + ", DB size: " + snappyDB.countKeys(KEY_PREFIX_PLAYLIST));
         } catch (SnappydbException e) {
             e.printStackTrace();
             return false;
@@ -79,7 +82,6 @@ public class SnappyDb {
         YouTubeVideo videoItem = null;
         try {
             videoItem = snappyDB.getObject(key, YouTubeVideo.class);
-            //Log.d(TAG, "Got video: " + key + ", DB size: " + snappyDB.countKeys(KEY_PREFIX_VIDEO));
         } catch (SnappydbException e) {
             e.printStackTrace();
         }
@@ -96,7 +98,6 @@ public class SnappyDb {
         YouTubePlaylist playlistItem = null;
         try {
             playlistItem = snappyDB.getObject(key, YouTubePlaylist.class);
-            //Log.d(TAG, "Got video: " + key + ", DB size: " + snappyDB.countKeys(KEY_PREFIX_VIDEO));
         } catch (SnappydbException e) {
             e.printStackTrace();
         }
@@ -139,7 +140,8 @@ public class SnappyDb {
         if (!isInitialized) return false;
         try {
             snappyDB.del(KEY_PREFIX_VIDEO + key);
-            Log.d(TAG, "Removed video: " + KEY_PREFIX_VIDEO + key + ", DB size: " + snappyDB.countKeys(KEY_PREFIX_VIDEO));
+            if (Config.DEBUG)
+                Log.d(TAG, "Removed video: " + KEY_PREFIX_VIDEO + key + ", DB size: " + snappyDB.countKeys(KEY_PREFIX_VIDEO));
         } catch (SnappydbException e) {
             e.printStackTrace();
             return false;
@@ -150,8 +152,9 @@ public class SnappyDb {
     public boolean removePlaylist(String key) {
         if (!isInitialized) return false;
         try {
-            snappyDB.del(KEY_PREFIX_PLAYLIST+ key);
-            Log.d(TAG, "Removed Playlist: " + KEY_PREFIX_PLAYLIST + key + ", DB size: " + snappyDB.countKeys(KEY_PREFIX_PLAYLIST));
+            snappyDB.del(KEY_PREFIX_PLAYLIST + key);
+            if (Config.DEBUG)
+                Log.d(TAG, "Removed Playlist: " + KEY_PREFIX_PLAYLIST + key + ", DB size: " + snappyDB.countKeys(KEY_PREFIX_PLAYLIST));
         } catch (SnappydbException e) {
             e.printStackTrace();
             return false;

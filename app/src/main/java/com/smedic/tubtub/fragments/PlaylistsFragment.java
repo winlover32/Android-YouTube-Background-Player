@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2016 SMedic
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.smedic.tubtub.fragments;
 
 import android.accounts.AccountManager;
@@ -7,7 +22,6 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
-import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -27,13 +41,13 @@ import com.google.android.gms.auth.UserRecoverableAuthException;
 import com.google.api.services.youtube.YouTubeScopes;
 import com.nhaarman.listviewanimations.appearance.simple.SwingBottomInAnimationAdapter;
 import com.nhaarman.listviewanimations.itemmanipulation.DynamicListView;
-import com.nhaarman.listviewanimations.itemmanipulation.swipedismiss.undo.UndoAdapter;
 import com.nhaarman.listviewanimations.util.Swappable;
 import com.smedic.tubtub.BackgroundAudioService;
 import com.smedic.tubtub.R;
 import com.smedic.tubtub.YouTubePlaylist;
 import com.smedic.tubtub.YouTubeSearch;
 import com.smedic.tubtub.YouTubeVideo;
+import com.smedic.tubtub.interfaces.YouTubePlaylistsReceiver;
 import com.smedic.tubtub.interfaces.YouTubeVideosReceiver;
 import com.smedic.tubtub.utils.Config;
 import com.smedic.tubtub.utils.SnappyDb;
@@ -42,12 +56,11 @@ import com.squareup.picasso.Picasso;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import javax.annotation.Nullable;
-
 /**
+ * Class that handles list of the playlists acquired from YouTube
  * Created by smedic on 7.3.16..
  */
-public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver {
+public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver, YouTubePlaylistsReceiver {
 
     private static final String TAG = "SMEDIC PlaylistsFrag";
 
@@ -75,7 +88,9 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        youTubeSearch = new YouTubeSearch(getActivity(), this, this);
+        youTubeSearch = new YouTubeSearch(getActivity(), this);
+        youTubeSearch.setYouTubePlaylistsReceiver(this);
+        youTubeSearch.setYouTubeVideosReceiver(this);
 
         if (savedInstanceState != null) {
             mChosenAccountName = savedInstanceState.getString(ACCOUNT_KEY);
@@ -85,6 +100,9 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
         }
     }
 
+    /**
+     * Loads account saved in preferences
+     */
     private void loadAccount() {
         SharedPreferences sp = PreferenceManager
                 .getDefaultSharedPreferences(getActivity());
@@ -92,6 +110,9 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
         youTubeSearch.setAuthSelectedAccountName(mChosenAccountName);
     }
 
+    /**
+     * Save account in preferences for future usages
+     */
     private void saveAccount() {
         Log.d(TAG, "Saving account name... " + mChosenAccountName);
         SharedPreferences sp = PreferenceManager
@@ -109,8 +130,8 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
 
         searchPlaylistsButton = (ImageButton) v.findViewById(R.id.loadButton);
 
-        loadingProgressBar = (ProgressBar) v.findViewById(R.id.loadingBar);
-        loadingProgressBar.setVisibility(View.INVISIBLE);
+        //loadingProgressBar = (ProgressBar) v.findViewById(R.id.loadingBar);
+        //loadingProgressBar.setVisibility(View.INVISIBLE);
 
         playlists = new ArrayList<>();
         setupListViewAndAdapter();
@@ -141,7 +162,7 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
                         }
                     }).start();
                     //loadingProgressBar.setVisibility(View.VISIBLE);
-                    youTubeSearch.searchPlaylists(playlists, playlistsAdapter);
+                    youTubeSearch.searchPlaylists();
                 }
             }
         });
@@ -175,6 +196,13 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
         }
     }
 
+    /**
+     * Handles Google OAuth 2.0 authorization or account chosen result
+     *
+     * @param requestCode
+     * @param resultCode
+     * @param data
+     */
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -196,18 +224,24 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
                         saveAccount();
                     }
 
-                    youTubeSearch.searchPlaylists(playlists, playlistsAdapter);
+                    youTubeSearch.searchPlaylists();
                 }
                 break;
         }
     }
 
+    /**
+     * Choose Google account if OAuth 2.0 choosing is necessary
+     * acquiring YouTube private playlists requires OAuth 2.0 authorization
+     */
     private void chooseAccount() {
         startActivityForResult(youTubeSearch.getCredential().newChooseAccountIntent(),
                 REQUEST_ACCOUNT_PICKER);
     }
 
-
+    /**
+     * Setups list view and adapter for storing YouTube playlists
+     */
     public void setupListViewAndAdapter() {
         playlistsAdapter = new PlaylistAdapter(getActivity());
         SwingBottomInAnimationAdapter animationAdapter = new SwingBottomInAnimationAdapter(playlistsAdapter);
@@ -233,13 +267,18 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
             public void onItemClick(AdapterView<?> av, View v, int pos,
                                     long id) {
                 Toast.makeText(getContext(), "Playing playlist: " + playlists.get(pos).getTitle(), Toast.LENGTH_SHORT).show();
-                youTubeSearch.acquirePlaylistVideos(playlists.get(pos).getId()); //results are in receive callback method
+                youTubeSearch.acquirePlaylistVideos(playlists.get(pos).getId()); //results are in onVideosReceived callback method
             }
         });
 
     }
 
-    public class PlaylistAdapter extends ArrayAdapter<YouTubePlaylist> implements Swappable, UndoAdapter {
+
+    /**
+     * Custom array adapter class which enables drag and drop list items swapping
+     */
+    public class PlaylistAdapter extends ArrayAdapter<YouTubePlaylist> implements Swappable {
+
         public PlaylistAdapter(Activity context) {
             super(context, R.layout.video_item, playlists);
         }
@@ -286,34 +325,37 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
 
             notifyDataSetChanged();
         }
-
-        @NonNull
-        @Override
-        public View getUndoView(int i, @Nullable View convertView, @NonNull ViewGroup viewGroup) {
-            View view = convertView;
-            if (view == null) {
-                view = LayoutInflater.from(getContext()).inflate(R.layout.undo_row, viewGroup, false);
-            }
-            return view;
-        }
-
-        @NonNull
-        @Override
-        public View getUndoClickView(@NonNull View view) {
-            return view.findViewById(R.id.undo_row_undobutton);
-        }
     }
 
     /**
-     * Called when playlist items are received
+     * Called when playlist video items are received
+     *
      * @param youTubeVideos - list to be played in background service
      */
     @Override
-    public void receive(ArrayList<YouTubeVideo> youTubeVideos){
+    public void onVideosReceived(ArrayList<YouTubeVideo> youTubeVideos) {
         Intent serviceIntent = new Intent(getContext(), BackgroundAudioService.class);
         serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
         serviceIntent.putExtra(Config.YOUTUBE_MEDIA_TYPE, Config.YOUTUBE_PLAYLIST);
         serviceIntent.putExtra(Config.YOUTUBE_TYPE_PLAYLIST, youTubeVideos);
         getActivity().startService(serviceIntent);
+    }
+
+    /**
+     * Called when playlists are received
+     *
+     * @param youTubePlaylists - list of playlists to be shown in list view
+     */
+    @Override
+    public void onPlaylistsReceived(ArrayList<YouTubePlaylist> youTubePlaylists) {
+        playlists.clear();
+        playlists.addAll(youTubePlaylists);
+        handler.post(new Runnable() {
+            public void run() {
+                if (playlistsAdapter != null) {
+                    playlistsAdapter.notifyDataSetChanged();
+                }
+            }
+        });
     }
 }

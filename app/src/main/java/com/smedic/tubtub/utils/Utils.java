@@ -8,13 +8,16 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
+ * Helper methods
  * Created by smedic on 4.2.16..
  */
 public class Utils {
 
     private static final String TAG = "SMEDIC JSON";
 
-    /* Converting ISO8601 formatted duration to normal readable time */
+    /**
+     * Converting ISO8601 formatted duration to normal readable time
+     */
     public static String convertISO8601DurationToNormalTime(String isoTime) {
         String formattedTime = new String();
 
@@ -49,6 +52,9 @@ public class Utils {
         return formattedTime;
     }
 
+    /**
+     * Makes values consist of 2 letters "01"
+     */
     private static String formatTo2Digits(String str) {
         if (str.length() < 2) {
             str = "0" + str;
@@ -56,6 +62,10 @@ public class Utils {
         return str;
     }
 
+    /**
+     * Prints videos nicely formatted
+     * @param videos
+     */
     public static void prettyPrintVideos(List<YouTubeVideo> videos) {
         Log.d(TAG, "=============================================================");
         Log.d(TAG, "\t\tTotal Videos Uploaded: " + videos.size());
@@ -73,6 +83,10 @@ public class Utils {
         }
     }
 
+    /**
+     * Prints video nicely formatted
+     * @param playlistEntry
+     */
     public static void prettyPrintVideoItem(YouTubeVideo playlistEntry) {
         Log.d(TAG, "*************************************************************");
         Log.d(TAG, "\t\tItem:");

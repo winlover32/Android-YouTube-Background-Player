@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2016 SMedic
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.smedic.tubtub;
 
 import android.app.Activity;
@@ -23,7 +38,7 @@ import com.google.api.services.youtube.model.SearchListResponse;
 import com.google.api.services.youtube.model.SearchResult;
 import com.google.api.services.youtube.model.Video;
 import com.google.api.services.youtube.model.VideoListResponse;
-import com.smedic.tubtub.fragments.PlaylistsFragment;
+import com.smedic.tubtub.interfaces.YouTubePlaylistsReceiver;
 import com.smedic.tubtub.interfaces.YouTubeVideosReceiver;
 import com.smedic.tubtub.utils.Auth;
 import com.smedic.tubtub.utils.Config;
@@ -37,6 +52,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
+ * Class for sending YouTube DATA API V3 request and receiving data from it
  * Created by smedic on 18.2.16..
  */
 public class YouTubeSearch {
@@ -55,33 +71,54 @@ public class YouTubeSearch {
     private String mChosenAccountName;
 
     private YouTubeVideosReceiver youTubeVideosReceiver;
+    private YouTubePlaylistsReceiver youTubePlaylistsReceiver;
 
     private static final int REQUEST_ACCOUNT_PICKER = 2;
     private static final int REQUEST_AUTHORIZATION = 3;
     private GoogleAccountCredential credential;
 
-    public YouTubeSearch(Activity activity, Fragment playlistFragment, YouTubeVideosReceiver youTubeVideosReceiver) {
+    public YouTubeSearch(Activity activity, Fragment playlistFragment) {
         this.activity = activity;
         this.playlistFragment = playlistFragment;
         handler = new Handler();
         credential = GoogleAccountCredential.usingOAuth2(activity.getApplicationContext(), Arrays.asList(Auth.SCOPES));
         credential.setBackOff(new ExponentialBackOff());
         appName = activity.getResources().getString(R.string.app_name);
+    }
+
+    public void setYouTubeVideosReceiver(YouTubeVideosReceiver youTubeVideosReceiver){
         this.youTubeVideosReceiver = youTubeVideosReceiver;
     }
 
+    public void setYouTubePlaylistsReceiver(YouTubePlaylistsReceiver youTubePlaylistsReceiver){
+        this.youTubePlaylistsReceiver = youTubePlaylistsReceiver;
+    }
+
+    /**
+     * Sets account name from app (chosen or acquired from shared preferences)
+     *
+     * @param authSelectedAccountName
+     */
     public void setAuthSelectedAccountName(String authSelectedAccountName) {
         this.mChosenAccountName = authSelectedAccountName;
         credential.setSelectedAccountName(mChosenAccountName);
     }
 
+    /**
+     * Gets credential - OAuth 2.0
+     *
+     * @return
+     */
     public GoogleAccountCredential getCredential() {
         return credential;
     }
 
-    //method for searching only 50 videos
-    public void searchVideos(final String keywords, final ArrayList<YouTubeVideo> searchResultsList,
-                             final VideosAdapter videoListAdapter) {
+    /**
+     * Search videos for a specific query
+     *
+     * @param keywords - query
+     */
+    public void searchVideos(final String keywords) {
 
         new Thread() {
             public void run() {
@@ -147,15 +184,7 @@ public class YouTubeSearch {
                         items.add(item);
                     }
 
-                    searchResultsList.addAll(items);
-
-                    handler.post(new Runnable() {
-                        public void run() {
-                            if (videoListAdapter != null) {
-                                videoListAdapter.notifyDataSetChanged();
-                            }
-                        }
-                    });
+                    youTubeVideosReceiver.onVideosReceived(items);
 
                 } catch (IOException e) {
                     Log.e(TAG, "Could not initialize: " + e);
@@ -166,8 +195,11 @@ public class YouTubeSearch {
         }.start();
     }
 
-    public void searchPlaylists(final ArrayList<YouTubePlaylist> playlistsList,
-                                final PlaylistsFragment.PlaylistAdapter playlistAdapter) {
+    /**
+     * /**
+     * Search playlists for a current user
+     */
+    public void searchPlaylists() {
         new Thread() {
             public void run() {
                 youtube = new YouTube.Builder(new NetHttpTransport(), new JacksonFactory(), credential)
@@ -175,15 +207,11 @@ public class YouTubeSearch {
                 try {
                     ChannelListResponse channelListResponse = youtube.channels().list("snippet").setMine(true).execute();
 
-                    Log.d(TAG, "Playlist acquiring...");
-
                     List<Channel> channelList = channelListResponse.getItems();
                     if (channelList.isEmpty()) {
                         Log.d(TAG, "Can't find user channel");
                     }
                     Channel channel = channelList.get(0);
-
-                    Log.d(TAG, "Name: " + channel.getSnippet().getTitle() + " , getId: " + channel.getId());
 
                     YouTube.Playlists.List searchList = youtube.playlists().list("id,snippet,contentDetails,status").setKey(Config.YOUTUBE_API_KEY);
 
@@ -203,7 +231,8 @@ public class YouTubeSearch {
                         }
 
                         //remove existing playlists
-                        playlistsList.clear();
+                        //playlistsList.clear();
+                        ArrayList<YouTubePlaylist> youTubePlaylistList = new ArrayList<>();
 
                         while (iteratorPlaylistResults.hasNext()) {
                             Playlist playlist = iteratorPlaylistResults.next();
@@ -213,16 +242,18 @@ public class YouTubeSearch {
                                     playlist.getId(),
                                     playlist.getContentDetails().getItemCount(),
                                     playlist.getStatus().getPrivacyStatus());
-                            playlistsList.add(playlistItem);
+                            youTubePlaylistList.add(playlistItem);
                             SnappyDb.getInstance().insertPlaylist(playlistItem); //save to Snappy DB
                         }
-                        handler.post(new Runnable() {
+
+                        youTubePlaylistsReceiver.onPlaylistsReceived(youTubePlaylistList);
+                        /*handler.post(new Runnable() {
                             public void run() {
                                 if (playlistAdapter != null) {
                                     playlistAdapter.notifyDataSetChanged();
                                 }
                             }
-                        });
+                        });*/
                     }
                 } catch (UserRecoverableAuthIOException e) {
                     playlistFragment.startActivityForResult(e.getIntent(), REQUEST_AUTHORIZATION);
@@ -234,6 +265,11 @@ public class YouTubeSearch {
 
     }
 
+    /**
+     * Acquires all videos for a specific playlist
+     *
+     * @param playlistId
+     */
     public void acquirePlaylistVideos(final String playlistId) {
 
         // Define a list to store items in the list of uploaded videos.
@@ -318,7 +354,7 @@ public class YouTubeSearch {
                     nextToken = playlistItemResult.getNextPageToken();
                     //} while (nextToken != null);
 
-                    youTubeVideosReceiver.receive(playlistItems);
+                    youTubeVideosReceiver.onVideosReceived(playlistItems);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2016 SMedic
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.smedic.tubtub;
 
 import android.os.AsyncTask;
@@ -17,6 +32,7 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 
 /**
+ * AsyncTask for acquiring search suggestion in action bar
  * Created by Stevan Medic on 19.2.16..
  */
 public class JsonAsyncTask extends AsyncTask<String, Void, ArrayList<String>> {
@@ -99,7 +115,12 @@ public class JsonAsyncTask extends AsyncTask<String, Void, ArrayList<String>> {
         delegate.processFinish(result);
     }
 
-    private int checkJson(String string) { //TODO FIX
+    /**
+     * Checks if JSON data is correctly formatted
+     * @param string
+     * @return
+     */
+    private int checkJson(String string) {
         try {
             Object json = new JSONTokener(string).nextValue();
             if (json instanceof JSONObject) {

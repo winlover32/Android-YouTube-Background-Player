@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2016 SMedic
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.smedic.tubtub;
 
 import android.app.NotificationManager;
@@ -33,9 +48,11 @@ import at.huber.youtubeExtractor.YouTubeUriExtractor;
 import at.huber.youtubeExtractor.YtFile;
 
 /**
+ * Service class for background youtube playback
  * Created by Stevan Medic on 9.3.16..
  */
-public class BackgroundAudioService extends Service {
+public class BackgroundAudioService extends Service implements MediaPlayer.OnCompletionListener,
+        MediaPlayer.OnPreparedListener {
 
     private static final String TAG = "SMEDIC service";
 
@@ -57,8 +74,13 @@ public class BackgroundAudioService extends Service {
 
     private boolean isStarting = false;
 
-    ArrayList<YouTubeVideo> youTubeVideos;
-    ListIterator<YouTubeVideo> iterator;
+    private ArrayList<YouTubeVideo> youTubeVideos;
+    private ListIterator<YouTubeVideo> iterator;
+
+    private NotificationCompat.Builder builder = null;
+
+    private boolean nextWasCalled = false;
+    private boolean previousWasCalled = false;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -67,24 +89,12 @@ public class BackgroundAudioService extends Service {
 
     @Override
     public void onCreate() {
-
+        super.onCreate();
         mMediaPlayer = new MediaPlayer();
-        mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-            @Override
-            public void onCompletion(MediaPlayer _mediaPlayer) {
-                playNext();
-            }
-        });
-        mMediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-            @Override
-            public void onPrepared(MediaPlayer mp) {
-                isStarting = false;
-            }
-        });
-
+        mMediaPlayer.setOnCompletionListener(this);
+        mMediaPlayer.setOnPreparedListener(this);
         videoItem = new YouTubeVideo();
         initMediaSessions();
-
     }
 
     @Override
@@ -93,57 +103,50 @@ public class BackgroundAudioService extends Service {
         return super.onStartCommand(intent, flags, startId);
     }
 
+    /**
+     * Handles intent (player options play/pause/stop...)
+     * @param intent
+     */
     private void handleIntent(Intent intent) {
         if (intent == null || intent.getAction() == null)
             return;
-
         String action = intent.getAction();
-
         if (action.equalsIgnoreCase(ACTION_PLAY)) {
             handleMedia(intent);
-
             mController.getTransportControls().play();
         } else if (action.equalsIgnoreCase(ACTION_PAUSE)) {
-            if (mMediaPlayer.isPlaying()) {
-                mMediaPlayer.pause();
-            }
             mController.getTransportControls().pause();
-
         } else if (action.equalsIgnoreCase(ACTION_PREVIOUS)) {
-            if (!isStarting) {
-                playPrevious();
-                mController.getTransportControls().skipToPrevious();
-            }
+            mController.getTransportControls().skipToPrevious();
         } else if (action.equalsIgnoreCase(ACTION_NEXT)) {
-            if (!isStarting) {
-                playNext();
-                mController.getTransportControls().skipToNext();
-            }
+            mController.getTransportControls().skipToNext();
         } else if (action.equalsIgnoreCase(ACTION_STOP)) {
             mController.getTransportControls().stop();
         }
     }
 
+    /**
+     * Handles media - playlists and videos sent from fragments
+     * @param intent
+     */
     private void handleMedia(Intent intent) {
 
-        mediaType = intent.getIntExtra(Config.YOUTUBE_MEDIA_TYPE, Config.YOUTUBE_NO_NEW_REQUEST);
-
-        switch (mediaType) {
+        int intentMediaType = intent.getIntExtra(Config.YOUTUBE_MEDIA_TYPE, Config.YOUTUBE_NO_NEW_REQUEST);
+        switch (intentMediaType) {
             case Config.YOUTUBE_NO_NEW_REQUEST: //video is paused,so no new playback requests should be processed
                 mMediaPlayer.start();
                 break;
             case Config.YOUTUBE_VIDEO:
-
-                YouTubeVideo youTubeVideo = (YouTubeVideo) intent.getSerializableExtra(Config.YOUTUBE_TYPE_VIDEO);
-                if (youTubeVideo.getId() != null) {
-                    playVideo(youTubeVideo);
+                mediaType = Config.YOUTUBE_VIDEO;
+                videoItem = (YouTubeVideo) intent.getSerializableExtra(Config.YOUTUBE_TYPE_VIDEO);
+                if (videoItem.getId() != null) {
+                    playVideo();
                 }
                 break;
             case Config.YOUTUBE_PLAYLIST: //new playlist playback request
-
+                mediaType = Config.YOUTUBE_PLAYLIST;
                 youTubeVideos = (ArrayList<YouTubeVideo>) intent.getSerializableExtra(Config.YOUTUBE_TYPE_PLAYLIST);
                 if (!youTubeVideos.isEmpty()) {
-                    Utils.prettyPrintVideos(youTubeVideos);
                     iterator = youTubeVideos.listIterator();
                     playNext();
                 } else {
@@ -151,57 +154,14 @@ public class BackgroundAudioService extends Service {
                 }
                 break;
             default:
-                Log.d(TAG, "Unknown media type");
+                Log.d(TAG, "Unknown command");
                 break;
         }
     }
 
-    private void playNext() {
-        if (!iterator.hasNext()) {
-            iterator = youTubeVideos.listIterator();
-        }
-        playVideo(iterator.next());
-    }
-
-    private void playPrevious() {
-        if (!iterator.hasPrevious()) {
-            iterator = youTubeVideos.listIterator(youTubeVideos.size());
-        }
-        playVideo(iterator.previous());
-    }
-
-    private void playVideo(YouTubeVideo video) {
-        isStarting = true;
-        Utils.prettyPrintVideoItem(video);
-        videoItem.setTitle(video.getTitle());
-        videoItem.setDuration(video.getDuration());
-        videoItem.setThumbnailURL(video.getThumbnailURL());
-        extractUrl(video.getId());
-    }
-
-    private void extractUrl(String videoId) {
-        String youtubeLink = "http://youtube.com/watch?v=" + videoId;
-        YouTubeUriExtractor ytEx = new YouTubeUriExtractor(this) {
-            @Override
-            public void onUrisAvailable(String videoId, String videoTitle, SparseArray<YtFile> ytFiles) {
-                if (ytFiles != null) {
-                    String downloadUrl = ytFiles.get(YOUTUBE_ITAG).getUrl();
-                    try {
-                        Log.d(TAG, "Start playback");
-                        mMediaPlayer.reset();
-                        mMediaPlayer.setDataSource(downloadUrl);
-                        mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-                        mMediaPlayer.prepare();
-                        mMediaPlayer.start();
-                    } catch (IOException io) {
-                        io.printStackTrace();
-                    }
-                }
-            }
-        };
-        ytEx.execute(youtubeLink);
-    }
-
+    /**
+     * Initializes media sessions and receives media events
+     */
     private void initMediaSessions() {
         // Make sure the media player will acquire a wake-lock while playing. If we don't do
         // that, the CPU might go to sleep while the song is playing, causing playback to stop.
@@ -226,29 +186,32 @@ public class BackgroundAudioService extends Service {
                         @Override
                         public void onPause() {
                             super.onPause();
+                            pauseVideo();
                             buildNotification(generateAction(android.R.drawable.ic_media_play, "Play", ACTION_PLAY));
                         }
 
                         @Override
                         public void onSkipToNext() {
                             super.onSkipToNext();
+                            if (!isStarting) {
+                                playNext();
+                            }
                             buildNotification(generateAction(android.R.drawable.ic_media_pause, "Pause", ACTION_PAUSE));
                         }
 
                         @Override
                         public void onSkipToPrevious() {
                             super.onSkipToPrevious();
-                            Log.d(TAG, "onSkipToPrevious");
+                            if (!isStarting) {
+                                playPrevious();
+                            }
                             buildNotification(generateAction(android.R.drawable.ic_media_pause, "Pause", ACTION_PAUSE));
                         }
 
                         @Override
                         public void onStop() {
                             super.onStop();
-                            Log.d(TAG, "onStop");
-                            //Stop media player here
-                            mMediaPlayer.stop();
-                            mMediaPlayer.release();
+                            stopPlayer();
                             //remove notification and stop service
                             NotificationManager notificationManager = (NotificationManager) getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
                             notificationManager.cancel(1);
@@ -267,16 +230,21 @@ public class BackgroundAudioService extends Service {
         }
     }
 
+    /**
+     * Builds notification panel with buttons and info on it
+     * @param action Action to be applied
+     */
+
     private void buildNotification(NotificationCompat.Action action) {
 
-        NotificationCompat.MediaStyle style = new NotificationCompat.MediaStyle();
+        final NotificationCompat.MediaStyle style = new NotificationCompat.MediaStyle();
 
         Intent intent = new Intent(getApplicationContext(), BackgroundAudioService.class);
         intent.setAction(ACTION_STOP);
 
         PendingIntent pendingIntent = PendingIntent.getService(getApplicationContext(), 1, intent, 0);
 
-        final NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
+        builder = new NotificationCompat.Builder(this);
         builder.setSmallIcon(R.mipmap.icon);
         builder.setContentTitle(videoItem.getTitle());
         builder.setContentInfo(videoItem.getDuration());
@@ -284,13 +252,14 @@ public class BackgroundAudioService extends Service {
         builder.setDeleteIntent(pendingIntent);
         builder.setStyle(style);
 
+        //load bitmap for largeScreen
         if (videoItem.getThumbnailURL() != null && !videoItem.getThumbnailURL().isEmpty()) {
             Picasso.with(this)
                     .load(videoItem.getThumbnailURL())
                     .into(new Target() {
                         @Override
                         public void onBitmapLoaded(final Bitmap bitmap, Picasso.LoadedFrom from) {
-                            builder.setLargeIcon(bitmap);
+                            updateNotificationLargeIcon(bitmap);
                         }
 
                         @Override
@@ -303,17 +272,15 @@ public class BackgroundAudioService extends Service {
                     });
         }
 
-        if(mediaType == Config.YOUTUBE_PLAYLIST) {
-            Log.d(TAG, "PLAYLIST ?!?!?");
+        if (mediaType == Config.YOUTUBE_PLAYLIST) {
             builder.addAction(generateAction(android.R.drawable.ic_media_previous, "Previous", ACTION_PREVIOUS));
         } else {
-            Log.d(TAG, "PLAYLIST ?!?!? NOT?");
             builder.addAction(0, null, null);
         }
 
         builder.addAction(action);
 
-        if(mediaType == Config.YOUTUBE_PLAYLIST) {
+        if (mediaType == Config.YOUTUBE_PLAYLIST) {
             builder.addAction(generateAction(android.R.drawable.ic_media_next, "Next", ACTION_NEXT));
         } else {
             builder.addAction(0, null, null);
@@ -326,9 +293,26 @@ public class BackgroundAudioService extends Service {
 
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.notify(1, builder.build());
+
     }
 
+    /**
+     * Updates only large icon in notification panel when bitmap is decoded
+     * @param bitmap
+     */
+    private void updateNotificationLargeIcon(Bitmap bitmap) {
+        builder.setLargeIcon(bitmap);
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.notify(1, builder.build());
+    }
 
+    /**
+     * Generates specific action with parameters below
+     * @param icon
+     * @param title
+     * @param intentAction
+     * @return
+     */
     private NotificationCompat.Action generateAction(int icon, String title, String intentAction) {
         Intent intent = new Intent(getApplicationContext(), BackgroundAudioService.class);
         intent.setAction(intentAction);
@@ -336,9 +320,123 @@ public class BackgroundAudioService extends Service {
         return new NotificationCompat.Action.Builder(icon, title, pendingIntent).build();
     }
 
+    /**
+     * Plays next video
+     */
+    private void playNext() {
+        if (!iterator.hasNext()) {
+            iterator = youTubeVideos.listIterator();
+        }
+
+        if (previousWasCalled) {
+            previousWasCalled = false;
+            iterator.next ();
+        }
+        videoItem = iterator.next();
+        nextWasCalled = true;
+        playVideo();
+    }
+
+    /**
+     * Plays previous video
+     */
+    private void playPrevious() {
+        if (!iterator.hasPrevious()) {
+            Log.d(TAG, "playPrevious NO PREVIOUS");
+            iterator = youTubeVideos.listIterator(youTubeVideos.size());
+        }
+
+        if (nextWasCalled) {
+            iterator.previous();
+            nextWasCalled = false;
+        }
+
+        Log.d(TAG, "NOW: " ); Utils.prettyPrintVideoItem(videoItem);
+        videoItem = iterator.previous();
+        Log.d(TAG, "PREVIOUS: "); Utils.prettyPrintVideoItem(videoItem);
+        previousWasCalled = true;
+        playVideo();
+    }
+
+    /**
+     * Plays video
+     */
+    private void playVideo() {
+        isStarting = true;
+        extractUrlAndPlay();
+    }
+
+    /**
+     * Pauses video
+     */
+    private void pauseVideo() {
+        if (mMediaPlayer.isPlaying()) {
+            mMediaPlayer.pause();
+        }
+    }
+
+    /**
+     * Restarts video
+     */
+    private void restartVideo() {
+        mMediaPlayer.start();
+    }
+
+    /**
+     * Stops video
+     */
+    private void stopPlayer() {
+        mMediaPlayer.stop();
+        mMediaPlayer.release();
+    }
+
+    /**
+     * Extracts link from youtube video ID, so mediaPlayer can play it
+     */
+    private void extractUrlAndPlay() {
+        String youtubeLink = "http://youtube.com/watch?v=" + videoItem.getId();
+        YouTubeUriExtractor ytEx = new YouTubeUriExtractor(this) {
+            @Override
+            public void onUrisAvailable(String videoId, String videoTitle, SparseArray<YtFile> ytFiles) {
+                if (ytFiles != null) {
+                    String downloadUrl = ytFiles.get(YOUTUBE_ITAG).getUrl();
+                    try {
+                        Log.d(TAG, "Start playback");
+                        if(mMediaPlayer != null) {
+                            mMediaPlayer.reset();
+                            mMediaPlayer.setDataSource(downloadUrl);
+                            mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+                            mMediaPlayer.prepare();
+                            mMediaPlayer.start();
+                        }
+                    } catch (IOException io) {
+                        io.printStackTrace();
+                    }
+                }
+            }
+        };
+        ytEx.execute(youtubeLink);
+    }
+
     @Override
     public void onTaskRemoved(Intent rootIntent) {
         NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         mNotificationManager.cancel(1);
     }
+
+    @Override
+    public void onCompletion(MediaPlayer _mediaPlayer) {
+        if (mediaType == Config.YOUTUBE_PLAYLIST) {
+            playNext();
+            buildNotification(generateAction(android.R.drawable.ic_media_pause, "Pause", ACTION_PAUSE));
+        } else {
+            restartVideo();
+        }
+    }
+
+    @Override
+    public void onPrepared(MediaPlayer mp) {
+        isStarting = false;
+    }
+
 }

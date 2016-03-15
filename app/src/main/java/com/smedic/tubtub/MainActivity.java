@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2016 SMedic
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.smedic.tubtub;
 
 import android.app.SearchManager;
@@ -28,6 +43,9 @@ import com.smedic.tubtub.utils.SnappyDb;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Activity that manages fragments and action bar
+ */
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "SMEDIC MAIN ACTIVITY";
@@ -65,6 +83,7 @@ public class MainActivity extends AppCompatActivity {
         tabLayout.setupWithViewPager(viewPager);
 
         setupTabIcons();
+
     }
 
     /**
@@ -80,6 +99,10 @@ public class MainActivity extends AppCompatActivity {
         handleIntent(intent);
     }
 
+    /**
+     * Handle search intent and queries YouTube for videos
+     * @param intent
+     */
     private void handleIntent(Intent intent) {
 
         if (Intent.ACTION_SEARCH.equals(intent.getAction())) {
@@ -90,13 +113,19 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Setups icons for 3 tabs
+     */
     private void setupTabIcons() {
         tabLayout.getTabAt(0).setIcon(tabIcons[0]);
         tabLayout.getTabAt(1).setIcon(tabIcons[1]);
         tabLayout.getTabAt(2).setIcon(tabIcons[2]);
     }
 
-
+    /**
+     * Setups viewPager for switching between pages according to the selected tab
+     * @param viewPager
+     */
     private void setupViewPager(ViewPager viewPager) {
 
         ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
@@ -109,7 +138,9 @@ public class MainActivity extends AppCompatActivity {
         viewPager.setAdapter(adapter);
     }
 
-
+    /**
+     * Class which provides adapter for fragment pager
+     */
     class ViewPagerAdapter extends FragmentPagerAdapter {
         private final List<Fragment> mFragmentList = new ArrayList<>();
         private final List<String> mFragmentTitleList = new ArrayList<>();
@@ -139,6 +170,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Options menu in action bar
+     * @param menu
+     * @return
+     */
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -224,6 +260,11 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
+    /**
+     * Handles selected item from action bar
+     * @param item
+     * @return
+     */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will

@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2016 SMedic
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.smedic.tubtub.fragments;
 
 import android.app.Activity;
@@ -33,6 +48,7 @@ import java.util.Arrays;
 import javax.annotation.Nullable;
 
 /**
+ * Class that handles list of the recently watched YouTube
  * Created by smedic on 7.3.16..
  */
 public class RecentlyWatchedFragment extends Fragment {
@@ -92,6 +108,9 @@ public class RecentlyWatchedFragment extends Fragment {
         }
     }
 
+    /**
+     * Setups list view and adapter for storing recently watched YouTube videos
+     */
     private void setupListViewAndAdapter() {
 
         /* Setup the adapter */
@@ -121,6 +140,9 @@ public class RecentlyWatchedFragment extends Fragment {
         addListeners();
     }
 
+    /**
+     * Adds listener for list item choosing
+     */
     void addListeners() {
         recentlyPlayedListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
@@ -138,6 +160,9 @@ public class RecentlyWatchedFragment extends Fragment {
         });
     }
 
+    /**
+     * Custom array adapter class which enables drag and drop and delete/undo of list items
+     */
     private class VideoListAdapter extends ArrayAdapter<YouTubeVideo> implements Swappable, UndoAdapter {
 
         public VideoListAdapter(Activity context) {
@@ -202,6 +227,9 @@ public class RecentlyWatchedFragment extends Fragment {
         }
     }
 
+    /**
+     * Callback which handles onDismiss event of a list item
+     */
     private class MyOnDismissCallback implements OnDismissCallback {
 
         @Nullable

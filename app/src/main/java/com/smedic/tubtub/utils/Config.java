@@ -1,10 +1,13 @@
 package com.smedic.tubtub.utils;
 
 /**
+ * Basic configuration values used in app
  * Created by smedic on 2.2.16..
  */
 
 public final class Config {
+
+    public static final boolean DEBUG = false;
 
     public static final int YOUTUBE_NO_NEW_REQUEST = -1;
     public static final int YOUTUBE_VIDEO = 0;

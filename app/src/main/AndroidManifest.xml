@@ -19,7 +19,6 @@
         <activity
             android:name=".MainActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"
-            android:label="@string/app_name"
             android:launchMode="singleTop"
             android:theme="@style/AppTheme.NoActionBar">
             <meta-data
@@ -37,10 +36,5 @@
             android:name=".BackgroundAudioService"
             android:process=":youtube"></service>
 
-        <receiver android:name=".ActionFromNotification">
-            <intent-filter>
-                <action android:name="com.smedic.tubtub.test_intent" />
-            </intent-filter>
-        </receiver>
     </application>
 </manifest>

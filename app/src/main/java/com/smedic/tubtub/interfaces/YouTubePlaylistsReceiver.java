@@ -15,16 +15,14 @@
  */
 package com.smedic.tubtub.interfaces;
 
-import com.smedic.tubtub.YouTubeVideo;
+import com.smedic.tubtub.YouTubePlaylist;
 
 import java.util.ArrayList;
 
 /**
- * Interface which enables passing videos to the fragments
- * Created by Stevan Medic on 10.3.16..
+ * Interface which enables passing playlists to the fragments
+ * Created by Stevan Medic on 15.3.16..
  */
-public interface YouTubeVideosReceiver {
-
-    void onVideosReceived(ArrayList<YouTubeVideo> youTubeVideos);
-
+public interface YouTubePlaylistsReceiver {
+    void onPlaylistsReceived(ArrayList<YouTubePlaylist> youTubePlaylists);
 }
