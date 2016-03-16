@@ -36,7 +36,6 @@ import android.util.SparseArray;
 import android.widget.Toast;
 
 import com.smedic.tubtub.utils.Config;
-import com.smedic.tubtub.utils.Utils;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 
@@ -245,7 +244,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
         PendingIntent pendingIntent = PendingIntent.getService(getApplicationContext(), 1, intent, 0);
 
         builder = new NotificationCompat.Builder(this);
-        builder.setSmallIcon(R.mipmap.icon);
+        builder.setSmallIcon(R.mipmap.ic_launcher);
         builder.setContentTitle(videoItem.getTitle());
         builder.setContentInfo(videoItem.getDuration());
         builder.setShowWhen(false);
@@ -324,14 +323,19 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
      * Plays next video
      */
     private void playNext() {
-        if (!iterator.hasNext()) {
-            iterator = youTubeVideos.listIterator();
-        }
 
         if (previousWasCalled) {
             previousWasCalled = false;
             iterator.next ();
         }
+
+        if (!iterator.hasNext()) {
+            Log.d(TAG, "playNext NO NEXT. iterator: " + iterator.nextIndex());
+            iterator = youTubeVideos.listIterator();
+        }else {
+            Log.d(TAG, "playNext YES NEXT iterator: " + iterator.nextIndex());
+        }
+
         videoItem = iterator.next();
         nextWasCalled = true;
         playVideo();
@@ -341,19 +345,20 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
      * Plays previous video
      */
     private void playPrevious() {
-        if (!iterator.hasPrevious()) {
-            Log.d(TAG, "playPrevious NO PREVIOUS");
-            iterator = youTubeVideos.listIterator(youTubeVideos.size());
-        }
 
         if (nextWasCalled) {
             iterator.previous();
             nextWasCalled = false;
         }
 
-        Log.d(TAG, "NOW: " ); Utils.prettyPrintVideoItem(videoItem);
+        if (!iterator.hasPrevious()) {
+            Log.d(TAG, "playPrevious NO PREVIOUS. iterator: " + iterator.previousIndex());
+            iterator = youTubeVideos.listIterator(youTubeVideos.size());
+        } else {
+            Log.d(TAG, "playPrevious YES PREVIOUS iterator: " + iterator.previousIndex());
+        }
+
         videoItem = iterator.previous();
-        Log.d(TAG, "PREVIOUS: "); Utils.prettyPrintVideoItem(videoItem);
         previousWasCalled = true;
         playVideo();
     }

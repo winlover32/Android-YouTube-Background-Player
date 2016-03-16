@@ -72,7 +72,6 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
         View v = inflater.inflate(R.layout.fragment_search, container, false);
 
         loadingProgressBar = (ProgressBar) v.findViewById(R.id.progressBar);
-        loadingProgressBar.setVisibility(View.INVISIBLE);
 
         handler = new Handler();
         searchResultsList = new ArrayList<>();

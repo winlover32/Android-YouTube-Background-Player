@@ -1,44 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <LinearLayout
+    <Space
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_gravity="center"
-        android:orientation="vertical">
+        android:layout_height="14dip" />
 
-        <Space
-            android:layout_width="match_parent"
-            android:layout_height="14dip" />
+    <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="horizontal">
 
-        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-            android:layout_width="match_parent"
+        <TextView
+            android:id="@+id/user_name"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:gravity="center_horizontal"
-            android:orientation="horizontal">
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:layout_gravity="left" />
 
-            <TextView
-                android:id="@+id/textView2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/user_playlist"
-                android:textAppearance="?android:attr/textAppearanceMedium" />
+        <ImageButton
+            android:id="@+id/loadButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
+            android:background="@drawable/refresh_selector"
+            android:text="@string/load_playlists" />
 
-            <ImageButton
-                android:id="@+id/loadButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="right"
-                android:background="@mipmap/refresh"
-                android:text="@string/load_playlists" />
-        </LinearLayout>
+        <TextView
+            android:id="@+id/textView2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/user_playlist"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:layout_gravity="center_horizontal" />
+    </FrameLayout>
 
-        <Space
-            android:layout_width="match_parent"
-            android:layout_height="3dip" />
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="3dip" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
         <com.nhaarman.listviewanimations.itemmanipulation.DynamicListView
             android:id="@+id/playlists"
@@ -46,6 +52,12 @@
             android:layout_height="match_parent"
             android:dividerHeight="3dp" />
 
-    </LinearLayout>
-
-</FrameLayout>
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:visibility="invisible"
+            style="?android:attr/progressBarStyleLarge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center" />
+    </FrameLayout>
+</LinearLayout>

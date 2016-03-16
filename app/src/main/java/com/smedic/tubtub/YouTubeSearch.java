@@ -42,7 +42,6 @@ import com.smedic.tubtub.interfaces.YouTubePlaylistsReceiver;
 import com.smedic.tubtub.interfaces.YouTubeVideosReceiver;
 import com.smedic.tubtub.utils.Auth;
 import com.smedic.tubtub.utils.Config;
-import com.smedic.tubtub.utils.SnappyDb;
 import com.smedic.tubtub.utils.Utils;
 
 import java.io.IOException;
@@ -231,7 +230,6 @@ public class YouTubeSearch {
                         }
 
                         //remove existing playlists
-                        //playlistsList.clear();
                         ArrayList<YouTubePlaylist> youTubePlaylistList = new ArrayList<>();
 
                         while (iteratorPlaylistResults.hasNext()) {
@@ -243,17 +241,9 @@ public class YouTubeSearch {
                                     playlist.getContentDetails().getItemCount(),
                                     playlist.getStatus().getPrivacyStatus());
                             youTubePlaylistList.add(playlistItem);
-                            SnappyDb.getInstance().insertPlaylist(playlistItem); //save to Snappy DB
                         }
 
                         youTubePlaylistsReceiver.onPlaylistsReceived(youTubePlaylistList);
-                        /*handler.post(new Runnable() {
-                            public void run() {
-                                if (playlistAdapter != null) {
-                                    playlistAdapter.notifyDataSetChanged();
-                                }
-                            }
-                        });*/
                     }
                 } catch (UserRecoverableAuthIOException e) {
                     playlistFragment.startActivityForResult(e.getIntent(), REQUEST_AUTHORIZATION);

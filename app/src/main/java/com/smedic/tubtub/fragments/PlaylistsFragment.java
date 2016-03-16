@@ -35,10 +35,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.auth.GoogleAuthException;
-import com.google.android.gms.auth.GoogleAuthUtil;
-import com.google.android.gms.auth.UserRecoverableAuthException;
-import com.google.api.services.youtube.YouTubeScopes;
 import com.nhaarman.listviewanimations.appearance.simple.SwingBottomInAnimationAdapter;
 import com.nhaarman.listviewanimations.itemmanipulation.DynamicListView;
 import com.nhaarman.listviewanimations.util.Swappable;
@@ -53,7 +49,6 @@ import com.smedic.tubtub.utils.Config;
 import com.smedic.tubtub.utils.SnappyDb;
 import com.squareup.picasso.Picasso;
 
-import java.io.IOException;
 import java.util.ArrayList;
 
 /**
@@ -80,6 +75,8 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
 
     private ProgressBar loadingProgressBar;
 
+    private TextView userNameTextView;
+
     public PlaylistsFragment() {
         // Required empty public constructor
     }
@@ -87,6 +84,9 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        handler = new Handler();
+        playlists = new ArrayList<>();
 
         youTubeSearch = new YouTubeSearch(getActivity(), this);
         youTubeSearch.setYouTubePlaylistsReceiver(this);
@@ -127,16 +127,13 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
 
         /* Setup the ListView */
         playlistsListView = (DynamicListView) v.findViewById(R.id.playlists);
-
         searchPlaylistsButton = (ImageButton) v.findViewById(R.id.loadButton);
+        loadingProgressBar = (ProgressBar) v.findViewById(R.id.progressBar);
+        userNameTextView = (TextView) v.findViewById(R.id.user_name);
 
-        //loadingProgressBar = (ProgressBar) v.findViewById(R.id.loadingBar);
-        //loadingProgressBar.setVisibility(View.INVISIBLE);
+        userNameTextView.setText(extractUserName(mChosenAccountName));
 
-        playlists = new ArrayList<>();
         setupListViewAndAdapter();
-
-        handler = new Handler();
 
         searchPlaylistsButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -145,23 +142,7 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
                 if (mChosenAccountName == null) {
                     chooseAccount();
                 } else {
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                String token = GoogleAuthUtil.getToken(getActivity(), mChosenAccountName,
-                                        "oauth2:" + YouTubeScopes.YOUTUBE);
-                                Log.d(TAG, "TOKEN " + token);
-                            } catch (IOException io) {
-
-                            } catch (UserRecoverableAuthException erae) {
-
-                            } catch (GoogleAuthException gae) {
-
-                            }
-                        }
-                    }).start();
-                    //loadingProgressBar.setVisibility(View.VISIBLE);
+                    loadingProgressBar.setVisibility(View.VISIBLE);
                     youTubeSearch.searchPlaylists();
                 }
             }
@@ -218,8 +199,10 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
                         && data.getExtras() != null) {
                     String accountName = data.getExtras().getString(
                             AccountManager.KEY_ACCOUNT_NAME);
+                    Log.d(TAG, "data.getExtras(): " + data.getExtras().toString());
                     if (accountName != null) {
                         mChosenAccountName = accountName;
+                        userNameTextView.setText(extractUserName(mChosenAccountName));
                         youTubeSearch.setAuthSelectedAccountName(accountName);
                         saveAccount();
                     }
@@ -348,14 +331,35 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
      */
     @Override
     public void onPlaylistsReceived(ArrayList<YouTubePlaylist> youTubePlaylists) {
+
+        //refresh playlists in database
+        SnappyDb.getInstance().removeAllPlaylists();
+        for(YouTubePlaylist playlist : youTubePlaylists) {
+            SnappyDb.getInstance().insertPlaylist(playlist);
+        }
+
         playlists.clear();
         playlists.addAll(youTubePlaylists);
         handler.post(new Runnable() {
             public void run() {
                 if (playlistsAdapter != null) {
                     playlistsAdapter.notifyDataSetChanged();
+                    loadingProgressBar.setVisibility(View.INVISIBLE);
                 }
             }
         });
+    }
+
+    /**
+     * Extracts user name from email address
+     * @param emailAddress
+     * @return
+     */
+    private String extractUserName(String emailAddress){
+        String[] parts = emailAddress.split("@");
+        if (parts.length > 0 && parts[0] != null)
+            return parts[0];
+        else
+            return "";
     }
 }

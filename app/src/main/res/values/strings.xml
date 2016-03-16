@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">TubTub</string>
-    <string name="action_settings">Settings</string>
+    <string name="action_about">about</string>
     <string name="section_format">Hello World from section: %1$d</string>
     <string name="recently_watched_tab">Recently watched</string>
     <string name="search_tab">Search YouTube</string>
@@ -31,5 +31,5 @@
     <string name="taptoundo">Tap to undo</string>
     <string name="itemdeleted">Item deleted</string>
     <string name="load_playlists">Load</string>
-    <string name="user_playlist">User\'s playlists</string>
+    <string name="user_playlist">Playlists</string>
 </resources>
