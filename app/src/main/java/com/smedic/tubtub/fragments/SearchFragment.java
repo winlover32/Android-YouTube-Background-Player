@@ -140,7 +140,6 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
             searchResultsList.clear();
         }
 
-        Log.d(TAG, "SET IT VISIBLE");
         loadingProgressBar.setVisibility(View.VISIBLE);
         youTubeSearch.searchVideos(query);
     }

@@ -330,10 +330,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
         }
 
         if (!iterator.hasNext()) {
-            Log.d(TAG, "playNext NO NEXT. iterator: " + iterator.nextIndex());
             iterator = youTubeVideos.listIterator();
-        }else {
-            Log.d(TAG, "playNext YES NEXT iterator: " + iterator.nextIndex());
         }
 
         videoItem = iterator.next();
@@ -352,10 +349,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
         }
 
         if (!iterator.hasPrevious()) {
-            Log.d(TAG, "playPrevious NO PREVIOUS. iterator: " + iterator.previousIndex());
             iterator = youTubeVideos.listIterator(youTubeVideos.size());
-        } else {
-            Log.d(TAG, "playPrevious YES PREVIOUS iterator: " + iterator.previousIndex());
         }
 
         videoItem = iterator.previous();

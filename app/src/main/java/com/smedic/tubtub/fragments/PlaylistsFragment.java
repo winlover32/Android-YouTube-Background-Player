@@ -199,7 +199,6 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
                         && data.getExtras() != null) {
                     String accountName = data.getExtras().getString(
                             AccountManager.KEY_ACCOUNT_NAME);
-                    Log.d(TAG, "data.getExtras(): " + data.getExtras().toString());
                     if (accountName != null) {
                         mChosenAccountName = accountName;
                         userNameTextView.setText(extractUserName(mChosenAccountName));
