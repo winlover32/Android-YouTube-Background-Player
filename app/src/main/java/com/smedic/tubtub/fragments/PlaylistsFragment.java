@@ -92,12 +92,6 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
         youTubeSearch.setYouTubePlaylistsReceiver(this);
         youTubeSearch.setYouTubeVideosReceiver(this);
 
-        if (savedInstanceState != null) {
-            mChosenAccountName = savedInstanceState.getString(ACCOUNT_KEY);
-            youTubeSearch.setAuthSelectedAccountName(mChosenAccountName);
-        } else {
-            loadAccount();
-        }
     }
 
     /**
@@ -107,7 +101,11 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
         SharedPreferences sp = PreferenceManager
                 .getDefaultSharedPreferences(getActivity());
         mChosenAccountName = sp.getString(ACCOUNT_KEY, null);
-        youTubeSearch.setAuthSelectedAccountName(mChosenAccountName);
+
+        if (mChosenAccountName != null) {
+            youTubeSearch.setAuthSelectedAccountName(mChosenAccountName);
+            userNameTextView.setText(extractUserName(mChosenAccountName));
+        }
     }
 
     /**
@@ -131,14 +129,19 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
         loadingProgressBar = (ProgressBar) v.findViewById(R.id.progressBar);
         userNameTextView = (TextView) v.findViewById(R.id.user_name);
 
-        userNameTextView.setText(extractUserName(mChosenAccountName));
-
         setupListViewAndAdapter();
+
+        if (savedInstanceState != null) {
+            mChosenAccountName = savedInstanceState.getString(ACCOUNT_KEY);
+            youTubeSearch.setAuthSelectedAccountName(mChosenAccountName);
+            userNameTextView.setText(extractUserName(mChosenAccountName));
+        } else {
+            loadAccount();
+        }
 
         searchPlaylistsButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
                 if (mChosenAccountName == null) {
                     chooseAccount();
                 } else {
@@ -201,8 +204,8 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
                             AccountManager.KEY_ACCOUNT_NAME);
                     if (accountName != null) {
                         mChosenAccountName = accountName;
-                        userNameTextView.setText(extractUserName(mChosenAccountName));
                         youTubeSearch.setAuthSelectedAccountName(accountName);
+                        userNameTextView.setText(extractUserName(mChosenAccountName));
                         saveAccount();
                     }
 
@@ -333,7 +336,7 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
 
         //refresh playlists in database
         SnappyDb.getInstance().removeAllPlaylists();
-        for(YouTubePlaylist playlist : youTubePlaylists) {
+        for (YouTubePlaylist playlist : youTubePlaylists) {
             SnappyDb.getInstance().insertPlaylist(playlist);
         }
 
@@ -351,10 +354,11 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
 
     /**
      * Extracts user name from email address
+     *
      * @param emailAddress
      * @return
      */
-    private String extractUserName(String emailAddress){
+    private String extractUserName(String emailAddress) {
         String[] parts = emailAddress.split("@");
         if (parts.length > 0 && parts[0] != null)
             return parts[0];
