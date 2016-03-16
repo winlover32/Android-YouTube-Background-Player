@@ -6,6 +6,6 @@ This is agains YT terms of service and could not be present on Google Play Store
 
 Application provides mechanisms for searching videos and playlists on YT, as well as logging into a Google account in order to acquire private playlists, which normally cannot be accessed.
 
-<img src="https://github.com/smedic/Android-YouTube-Background-Player/blob/master/raw/Screenshot_2016-03-15-15-36-28.png" alt="alt text" width="360" height="640">
-<img src="https://github.com/smedic/Android-YouTube-Background-Player/blob/master/raw/Screenshot_2016-03-15-15-37-39.png" alt="alt text" width="360" height="640">
+<img src="https://github.com/smedic/Android-YouTube-Background-Player/blob/master/raw/Screenshot_2016-03-16-12-14-49.png" alt="alt text" width="360" height="640">
+<img src="https://github.com/smedic/Android-YouTube-Background-Player/blob/master/raw/Screenshot_2016-03-16-12-14-41.png" alt="alt text" width="360" height="640">
 
