@@ -22,6 +22,7 @@ import android.support.v4.app.ListFragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
@@ -50,12 +51,14 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
     private DynamicListView videosFoundListView;
     private Handler handler;
     private ArrayList<YouTubeVideo> searchResultsList;
+    private ArrayList<YouTubeVideo> scrollResultsList;
     private VideosAdapter videoListAdapter;
     private YouTubeSearch youTubeSearch;
     private ProgressBar loadingProgressBar;
-    private String searchQuery;
-
     private NetworkConf networkConf;
+
+    private int onScrollIndex = 0;
+    private int mPrevTotalItemCount = 0;
 
     public SearchFragment() {
         // Required empty public constructor
@@ -67,6 +70,7 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
 
         handler = new Handler();
         searchResultsList = new ArrayList<>();
+        scrollResultsList = new ArrayList<>();
         networkConf = new NetworkConf(getActivity());
     }
 
@@ -122,11 +126,12 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
 
     /**
      * Search for query on youTube by using YouTube Data API V3
+     *
      * @param query
      */
     public void searchQuery(String query) {
         //check network connectivity
-        if(!networkConf.isNetworkAvailable()){
+        if (!networkConf.isNetworkAvailable()) {
             networkConf.createNetErrorDialog();
             return;
         }
@@ -146,7 +151,7 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
             public void onItemClick(AdapterView<?> av, View v, int pos,
                                     long id) {
                 //check network connectivity
-                if(!networkConf.isNetworkAvailable()){
+                if (!networkConf.isNetworkAvailable()) {
                     networkConf.createNetErrorDialog();
                     return;
                 }
@@ -162,6 +167,25 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
                 getActivity().startService(serviceIntent);
             }
         });
+
+        videosFoundListView.setOnScrollListener(new AbsListView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(AbsListView view, int scrollState) {
+
+            }
+
+            @Override
+            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+
+                //if specified number of videos is added, do not load more
+                if (totalItemCount < Config.NUMBER_OF_VIDEOS_RETURNED) {
+                    if (view.getAdapter() != null && ((firstVisibleItem + visibleItemCount) >= totalItemCount) && totalItemCount != mPrevTotalItemCount) {
+                        mPrevTotalItemCount = totalItemCount;
+                        addMoreData();
+                    }
+                }
+            }
+        });
     }
 
     /**
@@ -172,13 +196,29 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
     @Override
     public void onVideosReceived(ArrayList<YouTubeVideo> youTubeVideos) {
         searchResultsList.clear();
-        searchResultsList.addAll(youTubeVideos);
+        scrollResultsList.addAll(youTubeVideos);
 
+        handler.post(new Runnable() {
+            public void run() {
+                loadingProgressBar.setVisibility(View.INVISIBLE);
+            }
+        });
+
+        addMoreData();
+    }
+
+    /**
+     * Adds 10 items at the bottom of the list when list is scrolled to the end (10th element)
+     * 50 is max number of videos
+     */
+    private void addMoreData() {
+
+        searchResultsList.addAll(scrollResultsList.subList(10 * onScrollIndex, onScrollIndex * 10 + 10));
+        onScrollIndex++;
         handler.post(new Runnable() {
             public void run() {
                 if (videoListAdapter != null) {
                     videoListAdapter.notifyDataSetChanged();
-                    loadingProgressBar.setVisibility(View.INVISIBLE);
                 }
             }
         });

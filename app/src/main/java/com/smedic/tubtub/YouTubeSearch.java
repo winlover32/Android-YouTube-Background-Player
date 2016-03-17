@@ -57,7 +57,6 @@ import java.util.List;
 public class YouTubeSearch {
 
     private static final String TAG = "SMEDIC SEARCH CLASS";
-    private static final long NUMBER_OF_VIDEOS_RETURNED = 50; //due to YouTube API rules
     private String appName;
 
     private Handler handler;
@@ -135,7 +134,7 @@ public class YouTubeSearch {
                     searchList = youtube.search().list("id,snippet");
                     searchList.setKey(Config.YOUTUBE_API_KEY);
                     searchList.setType("video");
-                    searchList.setMaxResults(NUMBER_OF_VIDEOS_RETURNED);
+                    searchList.setMaxResults(Config.NUMBER_OF_VIDEOS_RETURNED);
                     searchList.setFields("items(id/videoId,snippet/title,snippet/thumbnails/default/url)");
 
                     videosList = youtube.videos().list("id,contentDetails");
