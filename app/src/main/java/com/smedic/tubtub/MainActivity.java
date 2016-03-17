@@ -40,6 +40,7 @@ import android.view.MenuItem;
 import com.smedic.tubtub.fragments.PlaylistsFragment;
 import com.smedic.tubtub.fragments.RecentlyWatchedFragment;
 import com.smedic.tubtub.fragments.SearchFragment;
+import com.smedic.tubtub.utils.NetworkConf;
 import com.smedic.tubtub.utils.SnappyDb;
 
 import java.util.ArrayList;
@@ -65,6 +66,8 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String YOUTUBE_DATABASE = "youtube_database";
 
+    private NetworkConf networkConf;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -83,6 +86,8 @@ public class MainActivity extends AppCompatActivity {
 
         tabLayout = (TabLayout) findViewById(R.id.tabs);
         tabLayout.setupWithViewPager(viewPager);
+
+        networkConf = new NetworkConf(this);
 
         setupTabIcons();
 
@@ -103,6 +108,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Handle search intent and queries YouTube for videos
+     *
      * @param intent
      */
     private void handleIntent(Intent intent) {
@@ -126,6 +132,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Setups viewPager for switching between pages according to the selected tab
+     *
      * @param viewPager
      */
     private void setupViewPager(ViewPager viewPager) {
@@ -174,6 +181,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Options menu in action bar
+     *
      * @param menu
      * @return
      */
@@ -212,6 +220,8 @@ public class MainActivity extends AppCompatActivity {
                 searchView.setQuery(suggestions.get(position), false);
                 searchView.clearFocus();
 
+                viewPager.setCurrentItem(1); //switch to search fragment
+
                 Intent suggestionIntent = new Intent(Intent.ACTION_SEARCH);
                 suggestionIntent.putExtra(SearchManager.QUERY, suggestions.get(position));
                 handleIntent(suggestionIntent);
@@ -223,37 +233,40 @@ public class MainActivity extends AppCompatActivity {
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String s) {
-                viewPager.setCurrentItem(1);
+                viewPager.setCurrentItem(1); //switch to search fragment
                 return false; //if true, no new intent is started
 
             }
 
             @Override
             public boolean onQueryTextChange(String suggestion) {
-
+                // check network connection. If not available, do not query.
+                // this also disables onSuggestionClick triggering
                 if (suggestion.length() > 2) { //make suggestions after 3rd letter
 
-                    JsonAsyncTask asyncTask = new JsonAsyncTask(new JsonAsyncTask.AsyncResponse() {
-                        @Override
-                        public void processFinish(ArrayList<String> result) {
-                            suggestions.clear();
-                            suggestions.addAll(result);
-                            String[] columns = {
-                                    BaseColumns._ID,
-                                    SearchManager.SUGGEST_COLUMN_TEXT_1
-                            };
-                            MatrixCursor cursor = new MatrixCursor(columns);
+                    if (networkConf.isNetworkAvailable()) {
 
-                            for (int i = 0; i < result.size(); i++) {
-                                String[] tmp = {Integer.toString(i), result.get(i)};
-                                cursor.addRow(tmp);
+                        new JsonAsyncTask(new JsonAsyncTask.AsyncResponse() {
+                            @Override
+                            public void processFinish(ArrayList<String> result) {
+                                suggestions.clear();
+                                suggestions.addAll(result);
+                                String[] columns = {
+                                        BaseColumns._ID,
+                                        SearchManager.SUGGEST_COLUMN_TEXT_1
+                                };
+                                MatrixCursor cursor = new MatrixCursor(columns);
+
+                                for (int i = 0; i < result.size(); i++) {
+                                    String[] tmp = {Integer.toString(i), result.get(i)};
+                                    cursor.addRow(tmp);
+                                }
+                                suggestionAdapter.swapCursor(cursor);
+
                             }
-                            suggestionAdapter.swapCursor(cursor);
-
-                        }
-                    });
-                    asyncTask.execute(suggestion);
-                    return true;
+                        }).execute(suggestion);
+                        return true;
+                    }
                 }
                 return false;
             }
@@ -264,6 +277,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Handles selected item from action bar
+     *
      * @param item
      * @return
      */

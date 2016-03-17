@@ -68,7 +68,7 @@ public class Utils {
      */
     public static void prettyPrintVideos(List<YouTubeVideo> videos) {
         Log.d(TAG, "=============================================================");
-        Log.d(TAG, "\t\tTotal Videos Uploaded: " + videos.size());
+        Log.d(TAG, "\t\tTotal Videos: " + videos.size());
         Log.d(TAG, "=============================================================\n");
 
         Iterator<YouTubeVideo> playlistEntries = videos.iterator();

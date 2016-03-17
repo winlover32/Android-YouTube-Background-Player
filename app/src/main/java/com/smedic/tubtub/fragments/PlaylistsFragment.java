@@ -46,6 +46,7 @@ import com.smedic.tubtub.YouTubeVideo;
 import com.smedic.tubtub.interfaces.YouTubePlaylistsReceiver;
 import com.smedic.tubtub.interfaces.YouTubeVideosReceiver;
 import com.smedic.tubtub.utils.Config;
+import com.smedic.tubtub.utils.NetworkConf;
 import com.smedic.tubtub.utils.SnappyDb;
 import com.squareup.picasso.Picasso;
 
@@ -72,10 +73,9 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
 
     private YouTubeSearch youTubeSearch;
     private ImageButton searchPlaylistsButton;
-
     private ProgressBar loadingProgressBar;
-
     private TextView userNameTextView;
+    private NetworkConf networkConf;
 
     public PlaylistsFragment() {
         // Required empty public constructor
@@ -92,30 +92,8 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
         youTubeSearch.setYouTubePlaylistsReceiver(this);
         youTubeSearch.setYouTubeVideosReceiver(this);
 
-    }
+        networkConf = new NetworkConf(getActivity());
 
-    /**
-     * Loads account saved in preferences
-     */
-    private void loadAccount() {
-        SharedPreferences sp = PreferenceManager
-                .getDefaultSharedPreferences(getActivity());
-        mChosenAccountName = sp.getString(ACCOUNT_KEY, null);
-
-        if (mChosenAccountName != null) {
-            youTubeSearch.setAuthSelectedAccountName(mChosenAccountName);
-            userNameTextView.setText(extractUserName(mChosenAccountName));
-        }
-    }
-
-    /**
-     * Save account in preferences for future usages
-     */
-    private void saveAccount() {
-        Log.d(TAG, "Saving account name... " + mChosenAccountName);
-        SharedPreferences sp = PreferenceManager
-                .getDefaultSharedPreferences(getActivity());
-        sp.edit().putString(ACCOUNT_KEY, mChosenAccountName).commit();
     }
 
     @Override
@@ -142,16 +120,45 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
         searchPlaylistsButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (mChosenAccountName == null) {
-                    chooseAccount();
+
+                if(networkConf.isNetworkAvailable()) {
+                    if (mChosenAccountName == null) {
+                        chooseAccount();
+                    } else {
+                        loadingProgressBar.setVisibility(View.VISIBLE);
+                        youTubeSearch.searchPlaylists();
+                    }
                 } else {
-                    loadingProgressBar.setVisibility(View.VISIBLE);
-                    youTubeSearch.searchPlaylists();
+                    networkConf.createNetErrorDialog();
                 }
             }
         });
 
         return v;
+    }
+
+    /**
+     * Loads account saved in preferences
+     */
+    private void loadAccount() {
+        SharedPreferences sp = PreferenceManager
+                .getDefaultSharedPreferences(getActivity());
+        mChosenAccountName = sp.getString(ACCOUNT_KEY, null);
+
+        if (mChosenAccountName != null) {
+            youTubeSearch.setAuthSelectedAccountName(mChosenAccountName);
+            userNameTextView.setText(extractUserName(mChosenAccountName));
+        }
+    }
+
+    /**
+     * Save account in preferences for future usages
+     */
+    private void saveAccount() {
+        Log.d(TAG, "Saving account name... " + mChosenAccountName);
+        SharedPreferences sp = PreferenceManager
+                .getDefaultSharedPreferences(getActivity());
+        sp.edit().putString(ACCOUNT_KEY, mChosenAccountName).commit();
     }
 
     @Override
@@ -251,6 +258,12 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
             @Override
             public void onItemClick(AdapterView<?> av, View v, int pos,
                                     long id) {
+
+                //check network connectivity
+                if(!networkConf.isNetworkAvailable()){
+                    networkConf.createNetErrorDialog();
+                    return;
+                }
                 Toast.makeText(getContext(), "Playing playlist: " + playlists.get(pos).getTitle(), Toast.LENGTH_SHORT).show();
                 youTubeSearch.acquirePlaylistVideos(playlists.get(pos).getId()); //results are in onVideosReceived callback method
             }

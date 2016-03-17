@@ -39,6 +39,7 @@ import com.smedic.tubtub.BackgroundAudioService;
 import com.smedic.tubtub.R;
 import com.smedic.tubtub.YouTubeVideo;
 import com.smedic.tubtub.utils.Config;
+import com.smedic.tubtub.utils.NetworkConf;
 import com.smedic.tubtub.utils.SnappyDb;
 import com.squareup.picasso.Picasso;
 
@@ -59,6 +60,8 @@ public class RecentlyWatchedFragment extends Fragment {
     private DynamicListView recentlyPlayedListView;
     private VideoListAdapter videoListAdapter;
 
+    private NetworkConf conf;
+
     public RecentlyWatchedFragment() {
         // Required empty public constructor
     }
@@ -66,6 +69,9 @@ public class RecentlyWatchedFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        recentlyPlayedVideos = new ArrayList<>();
+        conf = new NetworkConf(getActivity());
     }
 
     @Override
@@ -77,7 +83,6 @@ public class RecentlyWatchedFragment extends Fragment {
         /* Setup the ListView */
         recentlyPlayedListView = (DynamicListView) v.findViewById(R.id.recently_played);
 
-        recentlyPlayedVideos = new ArrayList<>();
         setupListViewAndAdapter();
 
         return v;
@@ -149,13 +154,18 @@ public class RecentlyWatchedFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> av, View v, final int pos,
                                     long id) {
-                Toast.makeText(getContext(), "Playing: " + recentlyPlayedVideos.get(pos).getTitle(), Toast.LENGTH_SHORT).show();
+                if (conf.isNetworkAvailable()) {
 
-                Intent serviceIntent = new Intent(getContext(), BackgroundAudioService.class);
-                serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
-                serviceIntent.putExtra(Config.YOUTUBE_MEDIA_TYPE, Config.YOUTUBE_VIDEO);
-                serviceIntent.putExtra(Config.YOUTUBE_TYPE_VIDEO, recentlyPlayedVideos.get(pos));
-                getActivity().startService(serviceIntent);
+                    Toast.makeText(getContext(), "Playing: " + recentlyPlayedVideos.get(pos).getTitle(), Toast.LENGTH_SHORT).show();
+
+                    Intent serviceIntent = new Intent(getContext(), BackgroundAudioService.class);
+                    serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
+                    serviceIntent.putExtra(Config.YOUTUBE_MEDIA_TYPE, Config.YOUTUBE_VIDEO);
+                    serviceIntent.putExtra(Config.YOUTUBE_TYPE_VIDEO, recentlyPlayedVideos.get(pos));
+                    getActivity().startService(serviceIntent);
+                } else {
+                    conf.createNetErrorDialog();
+                }
             }
         });
     }

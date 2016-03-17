@@ -19,7 +19,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.ListFragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,6 +35,7 @@ import com.smedic.tubtub.YouTubeSearch;
 import com.smedic.tubtub.YouTubeVideo;
 import com.smedic.tubtub.interfaces.YouTubeVideosReceiver;
 import com.smedic.tubtub.utils.Config;
+import com.smedic.tubtub.utils.NetworkConf;
 import com.smedic.tubtub.utils.SnappyDb;
 
 import java.util.ArrayList;
@@ -51,10 +51,11 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
     private Handler handler;
     private ArrayList<YouTubeVideo> searchResultsList;
     private VideosAdapter videoListAdapter;
-    private int preLast = 0;
     private YouTubeSearch youTubeSearch;
     private ProgressBar loadingProgressBar;
     private String searchQuery;
+
+    private NetworkConf networkConf;
 
     public SearchFragment() {
         // Required empty public constructor
@@ -63,6 +64,10 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        handler = new Handler();
+        searchResultsList = new ArrayList<>();
+        networkConf = new NetworkConf(getActivity());
     }
 
     @Override
@@ -70,12 +75,7 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_search, container, false);
-
         loadingProgressBar = (ProgressBar) v.findViewById(R.id.progressBar);
-
-        handler = new Handler();
-        searchResultsList = new ArrayList<>();
-
         return v;
     }
 
@@ -105,17 +105,15 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-
         videosFoundListView = (DynamicListView) getListView();
-
-        setupAdapter();
+        setupListViewAndAdapter();
         addListeners();
     }
 
     /**
      * Setups custom adapter which enables animations when adding elements
      */
-    private void setupAdapter() {
+    private void setupListViewAndAdapter() {
         videoListAdapter = new VideosAdapter(getActivity(), searchResultsList);
         SwingBottomInAnimationAdapter animationAdapter = new SwingBottomInAnimationAdapter(videoListAdapter);
         animationAdapter.setAbsListView(videosFoundListView);
@@ -127,17 +125,10 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
      * @param query
      */
     public void searchQuery(String query) {
-        Log.d(TAG, "Search query: " + query);
-        if (searchQuery != null) {
-            if (!searchQuery.equals(query)) { //check so on new query, it wont call onScroll and trigger last element event
-                preLast = 0;
-            }
-        }
-        searchQuery = query;
-
-        //initially set adapter
-        if (!searchResultsList.isEmpty()) {
-            searchResultsList.clear();
+        //check network connectivity
+        if(!networkConf.isNetworkAvailable()){
+            networkConf.createNetErrorDialog();
+            return;
         }
 
         loadingProgressBar.setVisibility(View.VISIBLE);
@@ -154,6 +145,12 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
             @Override
             public void onItemClick(AdapterView<?> av, View v, int pos,
                                     long id) {
+                //check network connectivity
+                if(!networkConf.isNetworkAvailable()){
+                    networkConf.createNetErrorDialog();
+                    return;
+                }
+
                 Toast.makeText(getContext(), "Playing: " + searchResultsList.get(pos).getTitle(), Toast.LENGTH_SHORT).show();
 
                 SnappyDb.getInstance().insert(searchResultsList.get(pos));
@@ -174,6 +171,7 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
      */
     @Override
     public void onVideosReceived(ArrayList<YouTubeVideo> youTubeVideos) {
+        searchResultsList.clear();
         searchResultsList.addAll(youTubeVideos);
 
         handler.post(new Runnable() {
