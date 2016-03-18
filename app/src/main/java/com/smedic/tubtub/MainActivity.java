@@ -37,11 +37,11 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.smedic.tubtub.database.YouTubeDbWrapper;
 import com.smedic.tubtub.fragments.PlaylistsFragment;
 import com.smedic.tubtub.fragments.RecentlyWatchedFragment;
 import com.smedic.tubtub.fragments.SearchFragment;
 import com.smedic.tubtub.utils.NetworkConf;
-import com.smedic.tubtub.utils.SnappyDb;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -57,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
     private ViewPager viewPager;
 
     private SearchFragment searchFragment;
+    private RecentlyWatchedFragment recentlyPlayedFragment;
 
     private int[] tabIcons = {
             android.R.drawable.ic_menu_recent_history,
@@ -73,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        SnappyDb.getInstance().init(this, YOUTUBE_DATABASE);
+        YouTubeDbWrapper.getInstance().init(this);
 
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -138,10 +139,11 @@ public class MainActivity extends AppCompatActivity {
     private void setupViewPager(ViewPager viewPager) {
 
         ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
-        adapter.addFragment(new RecentlyWatchedFragment(), "Recently watched");
 
         searchFragment = new SearchFragment();
+        recentlyPlayedFragment = new RecentlyWatchedFragment();
 
+        adapter.addFragment(recentlyPlayedFragment, "Recently watched");
         adapter.addFragment(searchFragment, "Search");
         adapter.addFragment(new PlaylistsFragment(), "Playlists");
         viewPager.setAdapter(adapter);
@@ -303,6 +305,10 @@ public class MainActivity extends AppCompatActivity {
                     });
             alertDialog.show();
 
+            return true;
+        } else if(id == R.id.action_clear_list) {
+            YouTubeDbWrapper.getInstance().videos().deleteAll();
+            recentlyPlayedFragment.clearRecentlyPlayedList();
             return true;
         } else if (id == R.id.action_search) {
             MenuItemCompat.expandActionView(item);

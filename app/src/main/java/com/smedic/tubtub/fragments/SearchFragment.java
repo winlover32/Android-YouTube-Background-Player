@@ -34,10 +34,10 @@ import com.smedic.tubtub.R;
 import com.smedic.tubtub.VideosAdapter;
 import com.smedic.tubtub.YouTubeSearch;
 import com.smedic.tubtub.YouTubeVideo;
+import com.smedic.tubtub.database.YouTubeDbWrapper;
 import com.smedic.tubtub.interfaces.YouTubeVideosReceiver;
 import com.smedic.tubtub.utils.Config;
 import com.smedic.tubtub.utils.NetworkConf;
-import com.smedic.tubtub.utils.SnappyDb;
 
 import java.util.ArrayList;
 
@@ -137,6 +137,7 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
         }
 
         loadingProgressBar.setVisibility(View.VISIBLE);
+        onScrollIndex = 0;
         youTubeSearch.searchVideos(query);
     }
 
@@ -158,7 +159,7 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
 
                 Toast.makeText(getContext(), "Playing: " + searchResultsList.get(pos).getTitle(), Toast.LENGTH_SHORT).show();
 
-                SnappyDb.getInstance().insert(searchResultsList.get(pos));
+                YouTubeDbWrapper.getInstance().videos().create(searchResultsList.get(pos));
 
                 Intent serviceIntent = new Intent(getContext(), BackgroundAudioService.class);
                 serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
@@ -196,6 +197,7 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
     @Override
     public void onVideosReceived(ArrayList<YouTubeVideo> youTubeVideos) {
         searchResultsList.clear();
+        scrollResultsList.clear();
         scrollResultsList.addAll(youTubeVideos);
 
         handler.post(new Runnable() {

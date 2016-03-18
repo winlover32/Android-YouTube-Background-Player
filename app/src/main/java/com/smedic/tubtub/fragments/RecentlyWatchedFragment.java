@@ -38,9 +38,9 @@ import com.nhaarman.listviewanimations.util.Swappable;
 import com.smedic.tubtub.BackgroundAudioService;
 import com.smedic.tubtub.R;
 import com.smedic.tubtub.YouTubeVideo;
+import com.smedic.tubtub.database.YouTubeDbWrapper;
 import com.smedic.tubtub.utils.Config;
 import com.smedic.tubtub.utils.NetworkConf;
-import com.smedic.tubtub.utils.SnappyDb;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
@@ -80,9 +80,7 @@ public class RecentlyWatchedFragment extends Fragment {
         // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_recently_watched, container, false);
 
-        /* Setup the ListView */
         recentlyPlayedListView = (DynamicListView) v.findViewById(R.id.recently_played);
-
         setupListViewAndAdapter();
 
         return v;
@@ -96,7 +94,7 @@ public class RecentlyWatchedFragment extends Fragment {
             //do nothing for now
         }
         recentlyPlayedVideos.clear();
-        recentlyPlayedVideos.addAll(SnappyDb.getInstance().getAllVideoItems());
+        recentlyPlayedVideos.addAll(YouTubeDbWrapper.getInstance().videos().readAll());
         videoListAdapter.notifyDataSetChanged();
     }
 
@@ -157,6 +155,8 @@ public class RecentlyWatchedFragment extends Fragment {
                 if (conf.isNetworkAvailable()) {
 
                     Toast.makeText(getContext(), "Playing: " + recentlyPlayedVideos.get(pos).getTitle(), Toast.LENGTH_SHORT).show();
+
+                    YouTubeDbWrapper.getInstance().videos().create(recentlyPlayedVideos.get(pos));
 
                     Intent serviceIntent = new Intent(getContext(), BackgroundAudioService.class);
                     serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
@@ -248,7 +248,7 @@ public class RecentlyWatchedFragment extends Fragment {
         @Override
         public void onDismiss(@NonNull final ViewGroup listView, @NonNull final int[] reverseSortedPositions) {
             for (int position : reverseSortedPositions) {
-                SnappyDb.getInstance().removeVideo(recentlyPlayedVideos.get(position).getId());
+                YouTubeDbWrapper.getInstance().videos().delete(recentlyPlayedVideos.get(position).getId());
                 recentlyPlayedVideos.remove(position);
                 videoListAdapter.notifyDataSetChanged();
             }
@@ -263,6 +263,14 @@ public class RecentlyWatchedFragment extends Fragment {
             );
             mToast.show();
         }
+    }
+
+    /**
+     * Clears recently played list items
+     */
+    public void clearRecentlyPlayedList() {
+        recentlyPlayedVideos.clear();
+        videoListAdapter.notifyDataSetChanged();
     }
 
 }

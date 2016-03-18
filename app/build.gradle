@@ -20,9 +20,30 @@ android {
         multiDexEnabled true
     }
     buildTypes {
+        debug {
+            applicationVariants.all { variant ->
+                variant.outputs.each { output ->
+                    def file = output.outputFile
+                    def appId = android.defaultConfig.applicationId
+                    def fileName = appId + "-" + variant.buildType.name +".apk"
+                    output.outputFile = new File(file.parent, fileName)
+                }
+            }
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+
+            debug {
+                applicationVariants.all { variant ->
+                    variant.outputs.each { output ->
+                        def file = output.outputFile
+                        def appId = android.defaultConfig.applicationId
+                        def fileName = appId + "-" + variant.buildType.name +".apk"
+                        output.outputFile = new File(file.parent, fileName)
+                    }
+                }
+            }
         }
     }
     dexOptions {
@@ -37,9 +58,7 @@ dependencies {
     compile 'com.android.support:design:23.2.0'
     compile 'com.android.support:support-v4:23.2.0'
     compile 'com.android.support:recyclerview-v7:23.2.0'
-    compile 'com.snappydb:snappydb-lib:0.5.2'
     compile 'com.google.android.gms:play-services:8.4.0'
-    compile 'com.esotericsoftware.kryo:kryo:2.24.0'
     compile files('libs/nineoldandroids-2.4.0.jar')
     compile files('libs/listviewanimations_lib-core-slh_3.1.0.jar')
     compile files('libs/listviewanimations_lib-manipulation_3.1.0.jar')

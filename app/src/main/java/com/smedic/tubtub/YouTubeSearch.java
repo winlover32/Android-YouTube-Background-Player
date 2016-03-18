@@ -228,7 +228,6 @@ public class YouTubeSearch {
                             Log.d(TAG, " There aren't any results for your query.");
                         }
 
-                        //remove existing playlists
                         ArrayList<YouTubePlaylist> youTubePlaylistList = new ArrayList<>();
 
                         while (iteratorPlaylistResults.hasNext()) {

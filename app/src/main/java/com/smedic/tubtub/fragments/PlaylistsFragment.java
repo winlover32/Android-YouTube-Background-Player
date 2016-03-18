@@ -43,11 +43,11 @@ import com.smedic.tubtub.R;
 import com.smedic.tubtub.YouTubePlaylist;
 import com.smedic.tubtub.YouTubeSearch;
 import com.smedic.tubtub.YouTubeVideo;
+import com.smedic.tubtub.database.YouTubeDbWrapper;
 import com.smedic.tubtub.interfaces.YouTubePlaylistsReceiver;
 import com.smedic.tubtub.interfaces.YouTubeVideosReceiver;
 import com.smedic.tubtub.utils.Config;
 import com.smedic.tubtub.utils.NetworkConf;
-import com.smedic.tubtub.utils.SnappyDb;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
@@ -170,7 +170,7 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
         }
 
         playlists.clear();
-        playlists.addAll(SnappyDb.getInstance().getAllPlaylistItems());
+        playlists.addAll(YouTubeDbWrapper.getInstance().playlists().readAll());
         playlistsAdapter.notifyDataSetChanged();
     }
 
@@ -348,9 +348,9 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
     public void onPlaylistsReceived(ArrayList<YouTubePlaylist> youTubePlaylists) {
 
         //refresh playlists in database
-        SnappyDb.getInstance().removeAllPlaylists();
+        YouTubeDbWrapper.getInstance().playlists().deleteAll();
         for (YouTubePlaylist playlist : youTubePlaylists) {
-            SnappyDb.getInstance().insertPlaylist(playlist);
+            YouTubeDbWrapper.getInstance().playlists().create(playlist);
         }
 
         playlists.clear();
