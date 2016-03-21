@@ -33,7 +33,6 @@ import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 import android.util.SparseArray;
-import android.widget.Toast;
 
 import com.smedic.tubtub.utils.Config;
 import com.squareup.picasso.Picasso;
@@ -104,6 +103,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
 
     /**
      * Handles intent (player options play/pause/stop...)
+     *
      * @param intent
      */
     private void handleIntent(Intent intent) {
@@ -126,6 +126,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
 
     /**
      * Handles media - playlists and videos sent from fragments
+     *
      * @param intent
      */
     private void handleMedia(Intent intent) {
@@ -145,12 +146,8 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
             case Config.YOUTUBE_PLAYLIST: //new playlist playback request
                 mediaType = Config.YOUTUBE_PLAYLIST;
                 youTubeVideos = (ArrayList<YouTubeVideo>) intent.getSerializableExtra(Config.YOUTUBE_TYPE_PLAYLIST);
-                if (!youTubeVideos.isEmpty()) {
-                    iterator = youTubeVideos.listIterator();
-                    playNext();
-                } else {
-                    Toast.makeText(getApplicationContext(), "Playlist is empty!", Toast.LENGTH_SHORT).show();
-                }
+                iterator = youTubeVideos.listIterator();
+                playNext();
                 break;
             default:
                 Log.d(TAG, "Unknown command");
@@ -231,6 +228,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
 
     /**
      * Builds notification panel with buttons and info on it
+     *
      * @param action Action to be applied
      */
 
@@ -297,6 +295,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
 
     /**
      * Updates only large icon in notification panel when bitmap is decoded
+     *
      * @param bitmap
      */
     private void updateNotificationLargeIcon(Bitmap bitmap) {
@@ -307,6 +306,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
 
     /**
      * Generates specific action with parameters below
+     *
      * @param icon
      * @param title
      * @param intentAction
@@ -326,7 +326,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
 
         if (previousWasCalled) {
             previousWasCalled = false;
-            iterator.next ();
+            iterator.next();
         }
 
         if (!iterator.hasNext()) {
@@ -401,7 +401,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
                     String downloadUrl = ytFiles.get(YOUTUBE_ITAG).getUrl();
                     try {
                         Log.d(TAG, "Start playback");
-                        if(mMediaPlayer != null) {
+                        if (mMediaPlayer != null) {
                             mMediaPlayer.reset();
                             mMediaPlayer.setDataSource(downloadUrl);
                             mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);

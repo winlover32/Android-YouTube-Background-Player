@@ -121,7 +121,7 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
             @Override
             public void onClick(View v) {
 
-                if(networkConf.isNetworkAvailable()) {
+                if (networkConf.isNetworkAvailable()) {
                     if (mChosenAccountName == null) {
                         chooseAccount();
                     } else {
@@ -258,19 +258,107 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
             @Override
             public void onItemClick(AdapterView<?> av, View v, int pos,
                                     long id) {
-
                 //check network connectivity
-                if(!networkConf.isNetworkAvailable()){
+                if (!networkConf.isNetworkAvailable()) {
                     networkConf.createNetErrorDialog();
                     return;
                 }
-                Toast.makeText(getContext(), "Playing playlist: " + playlists.get(pos).getTitle(), Toast.LENGTH_SHORT).show();
                 youTubeSearch.acquirePlaylistVideos(playlists.get(pos).getId()); //results are in onVideosReceived callback method
             }
         });
 
     }
 
+    /**
+     * Called when playlist video items are received
+     *
+     * @param youTubeVideos - list to be played in background service
+     */
+    @Override
+    public void onVideosReceived(ArrayList<YouTubeVideo> youTubeVideos) {
+        //if playlist is empty, do not start service
+        if (youTubeVideos.isEmpty()) {
+            getActivity().runOnUiThread(new Runnable() {
+                public void run() {
+                    Toast.makeText(getContext(), "Playlist is empty!", Toast.LENGTH_SHORT).show();
+                }
+            });
+        } else {
+            Intent serviceIntent = new Intent(getContext(), BackgroundAudioService.class);
+            serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
+            serviceIntent.putExtra(Config.YOUTUBE_MEDIA_TYPE, Config.YOUTUBE_PLAYLIST);
+            serviceIntent.putExtra(Config.YOUTUBE_TYPE_PLAYLIST, youTubeVideos);
+            getActivity().startService(serviceIntent);
+        }
+    }
+
+    @Override
+    public void onPlaylistNotFound(final String playlistId, int errorCode) {
+        Log.e(TAG, "Error 404. Playlist not found!");
+        getActivity().runOnUiThread(new Runnable() {
+            public void run() {
+                Toast.makeText(getContext(), "Playlist does not exist!", Toast.LENGTH_SHORT).show();
+                removePlaylist(playlistId);
+            }
+        });
+    }
+
+    /**
+     * Remove playlist with specific ID from DB and list
+     * @param playlistId
+     */
+    private void removePlaylist(final String playlistId) {
+        YouTubeDbWrapper.getInstance().playlists().delete(playlistId);
+
+        for (YouTubePlaylist playlist : playlists) {
+            if (playlist.getId().equals(playlistId)) {
+                playlists.remove(playlist);
+                break;
+            }
+        }
+
+        playlistsAdapter.notifyDataSetChanged();
+    }
+
+    /**
+     * Called when playlists are received
+     *
+     * @param youTubePlaylists - list of playlists to be shown in list view
+     */
+    @Override
+    public void onPlaylistsReceived(ArrayList<YouTubePlaylist> youTubePlaylists) {
+
+        //refresh playlists in database
+        YouTubeDbWrapper.getInstance().playlists().deleteAll();
+        for (YouTubePlaylist playlist : youTubePlaylists) {
+            YouTubeDbWrapper.getInstance().playlists().create(playlist);
+        }
+
+        playlists.clear();
+        playlists.addAll(youTubePlaylists);
+        handler.post(new Runnable() {
+            public void run() {
+                if (playlistsAdapter != null) {
+                    playlistsAdapter.notifyDataSetChanged();
+                    loadingProgressBar.setVisibility(View.INVISIBLE);
+                }
+            }
+        });
+    }
+
+    /**
+     * Extracts user name from email address
+     *
+     * @param emailAddress
+     * @return
+     */
+    private String extractUserName(String emailAddress) {
+        String[] parts = emailAddress.split("@");
+        if (parts.length > 0 && parts[0] != null)
+            return parts[0];
+        else
+            return "";
+    }
 
     /**
      * Custom array adapter class which enables drag and drop list items swapping
@@ -323,59 +411,5 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
 
             notifyDataSetChanged();
         }
-    }
-
-    /**
-     * Called when playlist video items are received
-     *
-     * @param youTubeVideos - list to be played in background service
-     */
-    @Override
-    public void onVideosReceived(ArrayList<YouTubeVideo> youTubeVideos) {
-        Intent serviceIntent = new Intent(getContext(), BackgroundAudioService.class);
-        serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
-        serviceIntent.putExtra(Config.YOUTUBE_MEDIA_TYPE, Config.YOUTUBE_PLAYLIST);
-        serviceIntent.putExtra(Config.YOUTUBE_TYPE_PLAYLIST, youTubeVideos);
-        getActivity().startService(serviceIntent);
-    }
-
-    /**
-     * Called when playlists are received
-     *
-     * @param youTubePlaylists - list of playlists to be shown in list view
-     */
-    @Override
-    public void onPlaylistsReceived(ArrayList<YouTubePlaylist> youTubePlaylists) {
-
-        //refresh playlists in database
-        YouTubeDbWrapper.getInstance().playlists().deleteAll();
-        for (YouTubePlaylist playlist : youTubePlaylists) {
-            YouTubeDbWrapper.getInstance().playlists().create(playlist);
-        }
-
-        playlists.clear();
-        playlists.addAll(youTubePlaylists);
-        handler.post(new Runnable() {
-            public void run() {
-                if (playlistsAdapter != null) {
-                    playlistsAdapter.notifyDataSetChanged();
-                    loadingProgressBar.setVisibility(View.INVISIBLE);
-                }
-            }
-        });
-    }
-
-    /**
-     * Extracts user name from email address
-     *
-     * @param emailAddress
-     * @return
-     */
-    private String extractUserName(String emailAddress) {
-        String[] parts = emailAddress.split("@");
-        if (parts.length > 0 && parts[0] != null)
-            return parts[0];
-        else
-            return "";
     }
 }

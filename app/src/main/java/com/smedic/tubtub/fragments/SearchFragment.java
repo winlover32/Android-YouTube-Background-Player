@@ -210,6 +210,17 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
     }
 
     /**
+     * Called when playlist cannot be found
+     * NOT USED in this fragment
+     * @param playlistId
+     * @param errorCode
+     */
+    @Override
+    public void onPlaylistNotFound(String playlistId, int errorCode) {
+
+    }
+
+    /**
      * Adds 10 items at the bottom of the list when list is scrolled to the end (10th element)
      * 50 is max number of videos
      */

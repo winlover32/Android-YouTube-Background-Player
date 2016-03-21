@@ -24,7 +24,6 @@ import java.util.ArrayList;
  * Created by Stevan Medic on 10.3.16..
  */
 public interface YouTubeVideosReceiver {
-
     void onVideosReceived(ArrayList<YouTubeVideo> youTubeVideos);
-
+    void onPlaylistNotFound(String playlistId, int errorCode);
 }

@@ -22,6 +22,7 @@ import android.util.Log;
 
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.javanet.NetHttpTransport;
@@ -84,11 +85,11 @@ public class YouTubeSearch {
         appName = activity.getResources().getString(R.string.app_name);
     }
 
-    public void setYouTubeVideosReceiver(YouTubeVideosReceiver youTubeVideosReceiver){
+    public void setYouTubeVideosReceiver(YouTubeVideosReceiver youTubeVideosReceiver) {
         this.youTubeVideosReceiver = youTubeVideosReceiver;
     }
 
-    public void setYouTubePlaylistsReceiver(YouTubePlaylistsReceiver youTubePlaylistsReceiver){
+    public void setYouTubePlaylistsReceiver(YouTubePlaylistsReceiver youTubePlaylistsReceiver) {
         this.youTubePlaylistsReceiver = youTubePlaylistsReceiver;
     }
 
@@ -274,30 +275,40 @@ public class YouTubeSearch {
                 ArrayList<PlaylistItem> playlistItemList = new ArrayList<PlaylistItem>();
                 ArrayList<YouTubeVideo> playlistItems = new ArrayList<>();
 
+                String nextToken = "";
+                // Retrieve the playlist of the channel's uploaded videos.
+                YouTube.PlaylistItems.List playlistItemRequest = null;
                 try {
-                    // Retrieve the playlist of the channel's uploaded videos.
-                    YouTube.PlaylistItems.List playlistItemRequest = youtube.playlistItems().list("id,contentDetails,snippet");
+                    playlistItemRequest = youtube.playlistItems().list("id,contentDetails,snippet");
                     playlistItemRequest.setPlaylistId(playlistId);
 
-                    // Only retrieve data used in this application, thereby making
-                    // the application more efficient. See:
-                    // https://developers.google.com/youtube/v3/getting-started#partial
-                    playlistItemRequest.setFields("items(contentDetails/videoId,snippet/title," +
-                            "snippet/thumbnails/default/url),nextPageToken");
-                    String nextToken = "";
-
-                    //videos to get duration
-                    YouTube.Videos.List videosList = youtube.videos().list("id,contentDetails");
-                    videosList.setKey(Config.YOUTUBE_API_KEY);
-                    videosList.setFields("items(contentDetails/duration)");
-
-                    // Call the API one or more times to retrieve all items in the
-                    // list. As long as the API response returns a nextPageToken,
-                    // there are still more items to retrieve.
+                    // Call API one or more times to retrieve all items in the list. As long as API
+                    // response returns a nextPageToken, there are still more items to retrieve.
                     //do {
                     playlistItemRequest.setPageToken(nextToken);
                     PlaylistItemListResponse playlistItemResult = playlistItemRequest.execute();
                     playlistItemList.addAll(playlistItemResult.getItems());
+                    //} while (nextToken != null);
+                } catch (GoogleJsonResponseException e) {
+                    if (e.getStatusCode() == 404) {
+                        youTubeVideosReceiver.onPlaylistNotFound(playlistId, e.getStatusCode());
+                        return;
+                    } else {
+                        e.printStackTrace();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                playlistItemRequest.setFields("items(contentDetails/videoId,snippet/title," +
+                        "snippet/thumbnails/default/url),nextPageToken");
+
+                //videos to get duration
+                YouTube.Videos.List videosList = null;
+                try {
+                    videosList = youtube.videos().list("id,contentDetails");
+                    videosList.setKey(Config.YOUTUBE_API_KEY);
+                    videosList.setFields("items(contentDetails/duration)");
 
                     //save all ids from searchList list in order to find video list
                     StringBuilder contentDetails = new StringBuilder();
@@ -309,46 +320,44 @@ public class YouTubeSearch {
                             contentDetails.append(",");
                         ii++;
                     }
-
                     //find video list
                     videosList.setId(contentDetails.toString());
-                    VideoListResponse resp = videosList.execute();
-                    List<Video> videoResults = resp.getItems();
-
-                    Iterator<PlaylistItem> pit = playlistItemList.iterator();
-                    Iterator<Video> vit = videoResults.iterator();
-                    while (pit.hasNext()) {
-                        PlaylistItem playlistItem = pit.next();
-                        Video videoItem = vit.next();
-
-                        YouTubeVideo youTubeVideo = new YouTubeVideo();
-
-                        youTubeVideo.setId(playlistItem.getContentDetails().getVideoId());
-                        youTubeVideo.setTitle(playlistItem.getSnippet().getTitle());
-                        youTubeVideo.setThumbnailURL(playlistItem.getSnippet().getThumbnails().getDefault().getUrl());
-
-                        //video info
-                        if (videoItem != null) {
-                            String isoTime = videoItem.getContentDetails().getDuration();
-                            String time = Utils.convertISO8601DurationToNormalTime(isoTime);
-                            youTubeVideo.setDuration(time);
-                        } else {
-                            youTubeVideo.setDuration("NA");
-                        }
-
-                        playlistItems.add(youTubeVideo);
-                    }
-
-                    nextToken = playlistItemResult.getNextPageToken();
-                    //} while (nextToken != null);
-
-                    youTubeVideosReceiver.onVideosReceived(playlistItems);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+
+                VideoListResponse resp = null;
+                try {
+                    resp = videosList.execute();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                List<Video> videoResults = resp.getItems();
+                Iterator<PlaylistItem> pit = playlistItemList.iterator();
+                Iterator<Video> vit = videoResults.iterator();
+                while (pit.hasNext()) {
+                    PlaylistItem playlistItem = pit.next();
+                    Video videoItem = vit.next();
+
+                    YouTubeVideo youTubeVideo = new YouTubeVideo();
+                    youTubeVideo.setId(playlistItem.getContentDetails().getVideoId());
+                    youTubeVideo.setTitle(playlistItem.getSnippet().getTitle());
+                    youTubeVideo.setThumbnailURL(playlistItem.getSnippet().getThumbnails().getDefault().getUrl());
+
+                    //video info
+                    if (videoItem != null) {
+                        String isoTime = videoItem.getContentDetails().getDuration();
+                        String time = Utils.convertISO8601DurationToNormalTime(isoTime);
+                        youTubeVideo.setDuration(time);
+                    } else {
+                        youTubeVideo.setDuration("NA");
+                    }
+                    playlistItems.add(youTubeVideo);
+                }
+
+                youTubeVideosReceiver.onVideosReceived(playlistItems);
             }
         }).start();
-
     }
-
 }
