@@ -14,7 +14,7 @@
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:text="Recently played videos"
         android:layout_gravity="center"
-        android:id="@+id/textView2" />
+        android:id="@+id/fragment_title_text_view" />
 
     <Space
         android:layout_width="match_parent"

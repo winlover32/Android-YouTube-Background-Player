@@ -46,6 +46,8 @@ import com.smedic.tubtub.utils.Config;
 import com.smedic.tubtub.utils.Utils;
 
 import java.io.IOException;
+import java.math.BigInteger;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -72,7 +74,6 @@ public class YouTubeSearch {
     private YouTubeVideosReceiver youTubeVideosReceiver;
     private YouTubePlaylistsReceiver youTubePlaylistsReceiver;
 
-    private static final int REQUEST_ACCOUNT_PICKER = 2;
     private static final int REQUEST_AUTHORIZATION = 3;
     private GoogleAccountCredential credential;
 
@@ -134,13 +135,13 @@ public class YouTubeSearch {
 
                     searchList = youtube.search().list("id,snippet");
                     searchList.setKey(Config.YOUTUBE_API_KEY);
-                    searchList.setType("video");
+                    searchList.setType("video"); //TODO ADD PLAYLISTS SEARCH
                     searchList.setMaxResults(Config.NUMBER_OF_VIDEOS_RETURNED);
                     searchList.setFields("items(id/videoId,snippet/title,snippet/thumbnails/default/url)");
 
-                    videosList = youtube.videos().list("id,contentDetails");
+                    videosList = youtube.videos().list("id,contentDetails,statistics");
                     videosList.setKey(Config.YOUTUBE_API_KEY);
-                    videosList.setFields("items(contentDetails/duration)");
+                    videosList.setFields("items(contentDetails/duration,statistics/viewCount)");
 
                     //search
                     searchList.setQ(keywords);
@@ -172,6 +173,9 @@ public class YouTubeSearch {
                         item.setId(searchResults.get(i).getId().getVideoId());
                         //video info
                         if (videoResults.get(i) != null) {
+                            BigInteger viewsNumber = videoResults.get(i).getStatistics().getViewCount();
+                            String viewsFormatted = NumberFormat.getIntegerInstance().format(viewsNumber) + " views";
+                            item.setViewCount(viewsFormatted);
                             String isoTime = videoResults.get(i).getContentDetails().getDuration();
                             String time = Utils.convertISO8601DurationToNormalTime(isoTime);
                             item.setDuration(time);

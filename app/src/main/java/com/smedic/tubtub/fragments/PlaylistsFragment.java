@@ -43,7 +43,7 @@ import com.smedic.tubtub.R;
 import com.smedic.tubtub.YouTubePlaylist;
 import com.smedic.tubtub.YouTubeSearch;
 import com.smedic.tubtub.YouTubeVideo;
-import com.smedic.tubtub.database.YouTubeDbWrapper;
+import com.smedic.tubtub.database.YouTubeSqlDb;
 import com.smedic.tubtub.interfaces.YouTubePlaylistsReceiver;
 import com.smedic.tubtub.interfaces.YouTubeVideosReceiver;
 import com.smedic.tubtub.utils.Config;
@@ -170,7 +170,7 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
         }
 
         playlists.clear();
-        playlists.addAll(YouTubeDbWrapper.getInstance().playlists().readAll());
+        playlists.addAll(YouTubeSqlDb.getInstance().playlists().readAll());
         playlistsAdapter.notifyDataSetChanged();
     }
 
@@ -308,7 +308,7 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
      * @param playlistId
      */
     private void removePlaylist(final String playlistId) {
-        YouTubeDbWrapper.getInstance().playlists().delete(playlistId);
+        YouTubeSqlDb.getInstance().playlists().delete(playlistId);
 
         for (YouTubePlaylist playlist : playlists) {
             if (playlist.getId().equals(playlistId)) {
@@ -329,9 +329,9 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
     public void onPlaylistsReceived(ArrayList<YouTubePlaylist> youTubePlaylists) {
 
         //refresh playlists in database
-        YouTubeDbWrapper.getInstance().playlists().deleteAll();
+        YouTubeSqlDb.getInstance().playlists().deleteAll();
         for (YouTubePlaylist playlist : youTubePlaylists) {
-            YouTubeDbWrapper.getInstance().playlists().create(playlist);
+            YouTubeSqlDb.getInstance().playlists().create(playlist);
         }
 
         playlists.clear();

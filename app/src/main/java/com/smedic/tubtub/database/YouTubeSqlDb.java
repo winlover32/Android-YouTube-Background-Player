@@ -21,6 +21,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.provider.BaseColumns;
+import android.util.Log;
 
 import com.smedic.tubtub.YouTubePlaylist;
 import com.smedic.tubtub.YouTubeVideo;
@@ -28,26 +29,33 @@ import com.smedic.tubtub.YouTubeVideo;
 import java.util.ArrayList;
 
 /**
- * SQLite database for storing videos and playlist
+ * SQLite database for storing recentlyWatchedVideos and playlist
  * Created by Stevan Medic on 17.3.16..
  */
-public class YouTubeDbWrapper {
+public class YouTubeSqlDb {
 
     private static final int DATABASE_VERSION = 1;
     private static final String DATABASE_NAME = "YouTubeDb.db";
 
+    public static final String RECENTLY_WATCHED_TABLE_NAME = "recently_watched_videos";
+    public static final String FAVORITES_TABLE_NAME = "favorites_videos";
+    private static final String TAG = "SMEDIC TABLE SQL";
+
+    public enum VIDEOS_TYPE {FAVORITE, RECENTLY_WATCHED}
+
     private YouTubeDbHelper dbHelper;
 
     private Playlists playlists;
-    private Videos videos;
+    private Videos recentlyWatchedVideos;
+    private Videos favoriteVideos;
 
-    private static YouTubeDbWrapper ourInstance = new YouTubeDbWrapper();
+    private static YouTubeSqlDb ourInstance = new YouTubeSqlDb();
 
-    public static YouTubeDbWrapper getInstance() {
+    public static YouTubeSqlDb getInstance() {
         return ourInstance;
     }
 
-    private YouTubeDbWrapper() {
+    private YouTubeSqlDb() {
     }
 
     public void init(Context context) {
@@ -55,11 +63,18 @@ public class YouTubeDbWrapper {
         dbHelper.getWritableDatabase();
 
         playlists = new Playlists();
-        videos = new Videos();
+        recentlyWatchedVideos = new Videos(RECENTLY_WATCHED_TABLE_NAME);
+        favoriteVideos = new Videos(FAVORITES_TABLE_NAME);
     }
 
-    public Videos videos() {
-        return videos;
+    public Videos videos(VIDEOS_TYPE type) {
+        if (type == VIDEOS_TYPE.FAVORITE) {
+            return favoriteVideos;
+        } else if (type == VIDEOS_TYPE.RECENTLY_WATCHED) {
+            return recentlyWatchedVideos;
+        }
+        Log.e(TAG, "Error. Unknown video type!");
+        return null;
     }
 
     public Playlists playlists() {
@@ -73,13 +88,15 @@ public class YouTubeDbWrapper {
 
         @Override
         public void onCreate(SQLiteDatabase db) {
-            db.execSQL(YouTubeVideoEntry.DATABASE_TABLE_CREATE);
+            db.execSQL(YouTubeVideoEntry.DATABASE_FAVORITES_TABLE_CREATE);
+            db.execSQL(YouTubeVideoEntry.DATABASE_RECENTLY_WATCHED_TABLE_CREATE);
             db.execSQL(YouTubePlaylistEntry.DATABASE_TABLE_CREATE);
         }
 
         @Override
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-            db.execSQL(YouTubeVideoEntry.DROP_QUERY);
+            db.execSQL(YouTubeVideoEntry.DROP_QUERY_RECENTLY_WATCHED);
+            db.execSQL(YouTubeVideoEntry.DROP_QUERY_FAVORITES);
             db.execSQL(YouTubePlaylistEntry.DROP_QUERY);
             onCreate(db);
         }
@@ -95,7 +112,10 @@ public class YouTubeDbWrapper {
      */
     public class Videos {
 
-        private Videos() {
+        private String tableName;
+
+        private Videos(String tableName) {
+            this.tableName = tableName;
         }
 
         /**
@@ -114,27 +134,49 @@ public class YouTubeDbWrapper {
             values.put(YouTubeVideoEntry.COLUMN_TITLE, video.getTitle());
             values.put(YouTubeVideoEntry.COLUMN_DURATION, video.getDuration());
             values.put(YouTubeVideoEntry.COLUMN_THUMBNAIL_URL, video.getThumbnailURL());
+            values.put(YouTubeVideoEntry.COLUMN_VIEWS_NUMBER, video.getViewCount());
 
-            return db.insert(YouTubeVideoEntry.TABLE_NAME, YouTubeVideoEntry.COLUMN_NAME_NULLABLE, values) > 0;
+            return db.insert(tableName, YouTubeVideoEntry.COLUMN_NAME_NULLABLE, values) > 0;
         }
 
         /**
-         * Reads all videos from playlists database
+         * Checks if entry is already present in database
+         * @param videoId
+         * @return
+         */
+        public boolean checkIfExists(String videoId) {
+            SQLiteDatabase db = dbHelper.getWritableDatabase();
+            String Query = "SELECT * FROM " + tableName + " WHERE " + YouTubeVideoEntry.COLUMN_VIDEO_ID + "='" + videoId + "'";
+            Cursor cursor = db.rawQuery(Query, null);
+            if (cursor.getCount() <= 0) {
+                cursor.close();
+                return false;
+            }
+            cursor.close();
+            return true;
+        }
+
+        /**
+         * Reads all recentlyWatchedVideos from playlists database
          *
          * @return
          */
         public ArrayList<YouTubeVideo> readAll() {
 
+            final String SELECT_QUERY_ORDER_DESC = "SELECT * FROM " + tableName + " ORDER BY "
+                    + YouTubeVideoEntry.COLUMN_ENTRY_ID + " DESC";
+
             SQLiteDatabase db = dbHelper.getReadableDatabase();
             ArrayList<YouTubeVideo> list = new ArrayList<>();
 
-            Cursor c = db.rawQuery(YouTubeVideoEntry.SELECT_QUERY_ORDER_DESC, null);
+            Cursor c = db.rawQuery(SELECT_QUERY_ORDER_DESC, null);
             while (c.moveToNext()) {
                 String videoId = c.getString(c.getColumnIndexOrThrow(YouTubeVideoEntry.COLUMN_VIDEO_ID));
                 String title = c.getString(c.getColumnIndexOrThrow(YouTubeVideoEntry.COLUMN_TITLE));
                 String duration = c.getString(c.getColumnIndexOrThrow(YouTubeVideoEntry.COLUMN_DURATION));
                 String thumbnailUrl = c.getString(c.getColumnIndexOrThrow(YouTubeVideoEntry.COLUMN_THUMBNAIL_URL));
-                list.add(new YouTubeVideo(videoId, title, thumbnailUrl, duration));
+                String viewsNumber = c.getString(c.getColumnIndexOrThrow(YouTubeVideoEntry.COLUMN_VIEWS_NUMBER));
+                list.add(new YouTubeVideo(videoId, title, thumbnailUrl, duration, viewsNumber));
             }
             c.close();
             return list;
@@ -147,7 +189,7 @@ public class YouTubeDbWrapper {
          * @return
          */
         public boolean delete(String videoId) {
-            return dbHelper.getWritableDatabase().delete(YouTubeVideoEntry.TABLE_NAME,
+            return dbHelper.getWritableDatabase().delete(tableName,
                     YouTubeVideoEntry.COLUMN_VIDEO_ID + "='" + videoId + "'", null) > 0;
         }
 
@@ -157,7 +199,7 @@ public class YouTubeDbWrapper {
          * @return
          */
         public boolean deleteAll() {
-            return dbHelper.getWritableDatabase().delete(YouTubeVideoEntry.TABLE_NAME, "1", null) > 0;
+            return dbHelper.getWritableDatabase().delete(tableName, "1", null) > 0;
         }
     }
 
@@ -239,26 +281,35 @@ public class YouTubeDbWrapper {
      * Inner class that defines Videos table entry
      */
     public static abstract class YouTubeVideoEntry implements BaseColumns {
-        public static final String TABLE_NAME = "videos";
         public static final String COLUMN_ENTRY_ID = "_id";
         public static final String COLUMN_VIDEO_ID = "video_id";
         public static final String COLUMN_TITLE = "title";
         public static final String COLUMN_DURATION = "duration";
         public static final String COLUMN_THUMBNAIL_URL = "thumbnail_url";
+        public static final String COLUMN_VIEWS_NUMBER = "views_number";
 
         public static final String COLUMN_NAME_NULLABLE = "null";
 
-        private static final String DATABASE_TABLE_CREATE =
-                "CREATE TABLE " + YouTubeVideoEntry.TABLE_NAME + "(" +
+        private static final String DATABASE_RECENTLY_WATCHED_TABLE_CREATE =
+                "CREATE TABLE " + RECENTLY_WATCHED_TABLE_NAME + "(" +
                         COLUMN_ENTRY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
                         COLUMN_VIDEO_ID + " TEXT NOT NULL UNIQUE," +
                         COLUMN_TITLE + " TEXT NOT NULL," +
                         COLUMN_DURATION + " TEXT," +
-                        COLUMN_THUMBNAIL_URL + " TEXT);";
+                        COLUMN_THUMBNAIL_URL + " TEXT," +
+                        COLUMN_VIEWS_NUMBER + " TEXT)";
 
-        public static final String DROP_QUERY = "DROP TABLE " + TABLE_NAME;
-        public static final String SELECT_QUERY_ORDER_DESC = "SELECT * FROM " + TABLE_NAME + " ORDER BY " + COLUMN_ENTRY_ID + " DESC";
-        //public static final String SELECT_QUERY = "SELECT * FROM " + TABLE_NAME;
+        private static final String DATABASE_FAVORITES_TABLE_CREATE =
+                "CREATE TABLE " + FAVORITES_TABLE_NAME + "(" +
+                        COLUMN_ENTRY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
+                        COLUMN_VIDEO_ID + " TEXT NOT NULL UNIQUE," +
+                        COLUMN_TITLE + " TEXT NOT NULL," +
+                        COLUMN_DURATION + " TEXT," +
+                        COLUMN_THUMBNAIL_URL + " TEXT," +
+                        COLUMN_VIEWS_NUMBER + " TEXT)";
+
+        public static final String DROP_QUERY_RECENTLY_WATCHED = "DROP TABLE " + RECENTLY_WATCHED_TABLE_NAME;
+        public static final String DROP_QUERY_FAVORITES = "DROP TABLE " + FAVORITES_TABLE_NAME;
     }
 
     /**

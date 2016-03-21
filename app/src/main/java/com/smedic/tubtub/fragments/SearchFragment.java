@@ -19,6 +19,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.ListFragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,7 +35,7 @@ import com.smedic.tubtub.R;
 import com.smedic.tubtub.VideosAdapter;
 import com.smedic.tubtub.YouTubeSearch;
 import com.smedic.tubtub.YouTubeVideo;
-import com.smedic.tubtub.database.YouTubeDbWrapper;
+import com.smedic.tubtub.database.YouTubeSqlDb;
 import com.smedic.tubtub.interfaces.YouTubeVideosReceiver;
 import com.smedic.tubtub.utils.Config;
 import com.smedic.tubtub.utils.NetworkConf;
@@ -102,6 +103,8 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
             //do nothing for now
         }
         //4th parameter is null, because playlists are not needed to this fragment
+
+        Log.d(TAG, "onResume - SearchFragment");
         youTubeSearch = new YouTubeSearch(getActivity(), this);
         youTubeSearch.setYouTubeVideosReceiver(this);
     }
@@ -118,7 +121,7 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
      * Setups custom adapter which enables animations when adding elements
      */
     private void setupListViewAndAdapter() {
-        videoListAdapter = new VideosAdapter(getActivity(), searchResultsList);
+        videoListAdapter = new VideosAdapter(getActivity(), searchResultsList, false);
         SwingBottomInAnimationAdapter animationAdapter = new SwingBottomInAnimationAdapter(videoListAdapter);
         animationAdapter.setAbsListView(videosFoundListView);
         videosFoundListView.setAdapter(animationAdapter);
@@ -159,7 +162,7 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
 
                 Toast.makeText(getContext(), "Playing: " + searchResultsList.get(pos).getTitle(), Toast.LENGTH_SHORT).show();
 
-                YouTubeDbWrapper.getInstance().videos().create(searchResultsList.get(pos));
+                YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.RECENTLY_WATCHED).create(searchResultsList.get(pos));
 
                 Intent serviceIntent = new Intent(getContext(), BackgroundAudioService.class);
                 serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);

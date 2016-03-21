@@ -15,33 +15,28 @@
  */
 package com.smedic.tubtub.fragments;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.nhaarman.listviewanimations.appearance.simple.SwingBottomInAnimationAdapter;
 import com.nhaarman.listviewanimations.itemmanipulation.DynamicListView;
 import com.nhaarman.listviewanimations.itemmanipulation.swipedismiss.OnDismissCallback;
 import com.nhaarman.listviewanimations.itemmanipulation.swipedismiss.undo.SimpleSwipeUndoAdapter;
-import com.nhaarman.listviewanimations.itemmanipulation.swipedismiss.undo.UndoAdapter;
-import com.nhaarman.listviewanimations.util.Swappable;
 import com.smedic.tubtub.BackgroundAudioService;
 import com.smedic.tubtub.R;
+import com.smedic.tubtub.VideosAdapter;
 import com.smedic.tubtub.YouTubeVideo;
-import com.smedic.tubtub.database.YouTubeDbWrapper;
+import com.smedic.tubtub.database.YouTubeSqlDb;
 import com.smedic.tubtub.utils.Config;
 import com.smedic.tubtub.utils.NetworkConf;
-import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -58,7 +53,7 @@ public class RecentlyWatchedFragment extends Fragment {
     private ArrayList<YouTubeVideo> recentlyPlayedVideos;
 
     private DynamicListView recentlyPlayedListView;
-    private VideoListAdapter videoListAdapter;
+    private VideosAdapter videoListAdapter;
 
     private NetworkConf conf;
 
@@ -93,8 +88,10 @@ public class RecentlyWatchedFragment extends Fragment {
         if (!getUserVisibleHint()) {
             //do nothing for now
         }
+
+        Log.d(TAG, "onResume - RecentlyWatchedFragment");
         recentlyPlayedVideos.clear();
-        recentlyPlayedVideos.addAll(YouTubeDbWrapper.getInstance().videos().readAll());
+        recentlyPlayedVideos.addAll(YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.RECENTLY_WATCHED).readAll());
         videoListAdapter.notifyDataSetChanged();
     }
 
@@ -117,7 +114,7 @@ public class RecentlyWatchedFragment extends Fragment {
     private void setupListViewAndAdapter() {
 
         /* Setup the adapter */
-        videoListAdapter = new VideoListAdapter(getActivity());
+        videoListAdapter = new VideosAdapter(getActivity(), recentlyPlayedVideos, false);
         SimpleSwipeUndoAdapter simpleSwipeUndoAdapter = new SimpleSwipeUndoAdapter(videoListAdapter, getContext(), new MyOnDismissCallback());
         SwingBottomInAnimationAdapter animationAdapter = new SwingBottomInAnimationAdapter(simpleSwipeUndoAdapter);
         animationAdapter.setAbsListView(recentlyPlayedListView);
@@ -156,7 +153,7 @@ public class RecentlyWatchedFragment extends Fragment {
 
                     Toast.makeText(getContext(), "Playing: " + recentlyPlayedVideos.get(pos).getTitle(), Toast.LENGTH_SHORT).show();
 
-                    YouTubeDbWrapper.getInstance().videos().create(recentlyPlayedVideos.get(pos));
+                    YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.RECENTLY_WATCHED).create(recentlyPlayedVideos.get(pos));
 
                     Intent serviceIntent = new Intent(getContext(), BackgroundAudioService.class);
                     serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
@@ -171,73 +168,6 @@ public class RecentlyWatchedFragment extends Fragment {
     }
 
     /**
-     * Custom array adapter class which enables drag and drop and delete/undo of list items
-     */
-    private class VideoListAdapter extends ArrayAdapter<YouTubeVideo> implements Swappable, UndoAdapter {
-
-        public VideoListAdapter(Activity context) {
-            super(context, R.layout.video_item, recentlyPlayedVideos);
-        }
-
-        @Override
-        public View getView(final int position, View convertView, ViewGroup parent) {
-
-            if (convertView == null) {
-                convertView = getActivity().getLayoutInflater().inflate(R.layout.video_item, parent, false);
-            }
-            ImageView thumbnail = (ImageView) convertView.findViewById(R.id.video_thumbnail);
-            TextView title = (TextView) convertView.findViewById(R.id.video_title);
-            TextView duration = (TextView) convertView.findViewById(R.id.video_duration);
-
-            YouTubeVideo searchResult = recentlyPlayedVideos.get(position);
-
-            Picasso.with(getContext()).load(searchResult.getThumbnailURL()).into(thumbnail);
-            title.setText(searchResult.getTitle());
-            duration.setText(searchResult.getDuration());
-
-            return convertView;
-        }
-
-        @Override
-        public long getItemId(int i) {
-            return getItem(i).hashCode();
-        }
-
-
-        @Override
-        public boolean hasStableIds() {
-            return true;
-        }
-
-
-        @Override
-        public void swapItems(int i, int i1) {
-            YouTubeVideo firstItem = getItem(i);
-
-            recentlyPlayedVideos.set(i, getItem(i1));
-            recentlyPlayedVideos.set(i1, firstItem);
-
-            notifyDataSetChanged();
-        }
-
-        @NonNull
-        @Override
-        public View getUndoView(int i, @Nullable View convertView, @NonNull ViewGroup viewGroup) {
-            View view = convertView;
-            if (view == null) {
-                view = LayoutInflater.from(getContext()).inflate(R.layout.undo_row, viewGroup, false);
-            }
-            return view;
-        }
-
-        @NonNull
-        @Override
-        public View getUndoClickView(@NonNull View view) {
-            return view.findViewById(R.id.undo_row_undobutton);
-        }
-    }
-
-    /**
      * Callback which handles onDismiss event of a list item
      */
     private class MyOnDismissCallback implements OnDismissCallback {
@@ -248,7 +178,8 @@ public class RecentlyWatchedFragment extends Fragment {
         @Override
         public void onDismiss(@NonNull final ViewGroup listView, @NonNull final int[] reverseSortedPositions) {
             for (int position : reverseSortedPositions) {
-                YouTubeDbWrapper.getInstance().videos().delete(recentlyPlayedVideos.get(position).getId());
+                YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.RECENTLY_WATCHED).
+                        delete(recentlyPlayedVideos.get(position).getId());
                 recentlyPlayedVideos.remove(position);
                 videoListAdapter.notifyDataSetChanged();
             }

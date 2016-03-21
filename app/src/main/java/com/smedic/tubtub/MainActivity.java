@@ -37,7 +37,8 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import com.smedic.tubtub.database.YouTubeDbWrapper;
+import com.smedic.tubtub.database.YouTubeSqlDb;
+import com.smedic.tubtub.fragments.FavoritesFragment;
 import com.smedic.tubtub.fragments.PlaylistsFragment;
 import com.smedic.tubtub.fragments.RecentlyWatchedFragment;
 import com.smedic.tubtub.fragments.SearchFragment;
@@ -60,12 +61,11 @@ public class MainActivity extends AppCompatActivity {
     private RecentlyWatchedFragment recentlyPlayedFragment;
 
     private int[] tabIcons = {
+            R.drawable.ic_favorite_tab_icon,
             android.R.drawable.ic_menu_recent_history,
             android.R.drawable.ic_menu_search,
             android.R.drawable.ic_menu_upload_you_tube
     };
-
-    private static final String YOUTUBE_DATABASE = "youtube_database";
 
     private NetworkConf networkConf;
 
@@ -74,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        YouTubeDbWrapper.getInstance().init(this);
+        YouTubeSqlDb.getInstance().init(this);
 
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -82,7 +82,7 @@ public class MainActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
 
         viewPager = (ViewPager) findViewById(R.id.viewpager);
-        viewPager.setOffscreenPageLimit(2);
+        viewPager.setOffscreenPageLimit(3);
         setupViewPager(viewPager);
 
         tabLayout = (TabLayout) findViewById(R.id.tabs);
@@ -129,6 +129,7 @@ public class MainActivity extends AppCompatActivity {
         tabLayout.getTabAt(0).setIcon(tabIcons[0]);
         tabLayout.getTabAt(1).setIcon(tabIcons[1]);
         tabLayout.getTabAt(2).setIcon(tabIcons[2]);
+        tabLayout.getTabAt(3).setIcon(tabIcons[3]);
     }
 
     /**
@@ -142,7 +143,7 @@ public class MainActivity extends AppCompatActivity {
 
         searchFragment = new SearchFragment();
         recentlyPlayedFragment = new RecentlyWatchedFragment();
-
+        adapter.addFragment(new FavoritesFragment(), "Favorites");
         adapter.addFragment(recentlyPlayedFragment, "Recently watched");
         adapter.addFragment(searchFragment, "Search");
         adapter.addFragment(new PlaylistsFragment(), "Playlists");
@@ -222,7 +223,7 @@ public class MainActivity extends AppCompatActivity {
                 searchView.setQuery(suggestions.get(position), false);
                 searchView.clearFocus();
 
-                viewPager.setCurrentItem(1); //switch to search fragment
+                viewPager.setCurrentItem(2); //switch to search fragment
 
                 Intent suggestionIntent = new Intent(Intent.ACTION_SEARCH);
                 suggestionIntent.putExtra(SearchManager.QUERY, suggestions.get(position));
@@ -235,9 +236,8 @@ public class MainActivity extends AppCompatActivity {
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String s) {
-                viewPager.setCurrentItem(1); //switch to search fragment
+                viewPager.setCurrentItem(2); //switch to search fragment
                 return false; //if true, no new intent is started
-
             }
 
             @Override
@@ -307,7 +307,7 @@ public class MainActivity extends AppCompatActivity {
 
             return true;
         } else if(id == R.id.action_clear_list) {
-            YouTubeDbWrapper.getInstance().videos().deleteAll();
+            YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.RECENTLY_WATCHED).deleteAll();
             recentlyPlayedFragment.clearRecentlyPlayedList();
             return true;
         } else if (id == R.id.action_search) {
