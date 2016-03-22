@@ -88,10 +88,10 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
     @Override
     public void onCreate() {
         super.onCreate();
+        videoItem = new YouTubeVideo();
         mMediaPlayer = new MediaPlayer();
         mMediaPlayer.setOnCompletionListener(this);
         mMediaPlayer.setOnPreparedListener(this);
-        videoItem = new YouTubeVideo();
         initMediaSessions();
     }
 
@@ -238,15 +238,20 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
 
         Intent intent = new Intent(getApplicationContext(), BackgroundAudioService.class);
         intent.setAction(ACTION_STOP);
+        PendingIntent stopPendingIntent = PendingIntent.getService(getApplicationContext(), 1, intent, 0);
 
-        PendingIntent pendingIntent = PendingIntent.getService(getApplicationContext(), 1, intent, 0);
+        Intent clickIntent = new Intent(this, MainActivity.class);
+        clickIntent.setAction(Intent.ACTION_MAIN);
+        clickIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+        PendingIntent clickPendingIntent = PendingIntent.getActivity(this, 0, clickIntent, 0);
 
         builder = new NotificationCompat.Builder(this);
         builder.setSmallIcon(R.mipmap.ic_launcher);
         builder.setContentTitle(videoItem.getTitle());
         builder.setContentInfo(videoItem.getDuration());
         builder.setShowWhen(false);
-        builder.setDeleteIntent(pendingIntent);
+        builder.setContentIntent(clickPendingIntent);
+        builder.setDeleteIntent(stopPendingIntent);
         builder.setStyle(style);
 
         //load bitmap for largeScreen

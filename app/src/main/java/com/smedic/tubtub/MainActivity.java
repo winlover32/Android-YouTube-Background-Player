@@ -19,8 +19,10 @@ import android.app.SearchManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.MatrixCursor;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.provider.BaseColumns;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
@@ -36,7 +38,10 @@ import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
 
+import com.pes.androidmaterialcolorpickerdialog.ColorPicker;
 import com.smedic.tubtub.database.YouTubeSqlDb;
 import com.smedic.tubtub.fragments.FavoritesFragment;
 import com.smedic.tubtub.fragments.PlaylistsFragment;
@@ -56,6 +61,8 @@ public class MainActivity extends AppCompatActivity {
     private Toolbar toolbar;
     private TabLayout tabLayout;
     private ViewPager viewPager;
+
+    private ColorPicker cp;
 
     private SearchFragment searchFragment;
     private RecentlyWatchedFragment recentlyPlayedFragment;
@@ -90,7 +97,11 @@ public class MainActivity extends AppCompatActivity {
 
         networkConf = new NetworkConf(this);
 
+        cp = new ColorPicker(MainActivity.this, 0, 0, 0);
+
         setupTabIcons();
+
+        loadColor();
 
     }
 
@@ -116,6 +127,9 @@ public class MainActivity extends AppCompatActivity {
 
         if (Intent.ACTION_SEARCH.equals(intent.getAction())) {
             String query = intent.getStringExtra(SearchManager.QUERY);
+
+            viewPager.setCurrentItem(2, true); //switch to search fragment
+
             if (searchFragment != null) {
                 searchFragment.searchQuery(query);
             }
@@ -223,8 +237,6 @@ public class MainActivity extends AppCompatActivity {
                 searchView.setQuery(suggestions.get(position), false);
                 searchView.clearFocus();
 
-                viewPager.setCurrentItem(2); //switch to search fragment
-
                 Intent suggestionIntent = new Intent(Intent.ACTION_SEARCH);
                 suggestionIntent.putExtra(SearchManager.QUERY, suggestions.get(position));
                 handleIntent(suggestionIntent);
@@ -236,7 +248,6 @@ public class MainActivity extends AppCompatActivity {
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String s) {
-                viewPager.setCurrentItem(2); //switch to search fragment
                 return false; //if true, no new intent is started
             }
 
@@ -306,15 +317,54 @@ public class MainActivity extends AppCompatActivity {
             alertDialog.show();
 
             return true;
-        } else if(id == R.id.action_clear_list) {
+        } else if (id == R.id.action_clear_list) {
             YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.RECENTLY_WATCHED).deleteAll();
             recentlyPlayedFragment.clearRecentlyPlayedList();
             return true;
         } else if (id == R.id.action_search) {
             MenuItemCompat.expandActionView(item);
             return true;
+        } else if (id == R.id.action_color_picker) {
+            /* Show color picker dialog */
+            cp.show();
+
+            /* On Click listener for the dialog, when the user select the color */
+            Button okColor = (Button) cp.findViewById(R.id.okColorButton);
+            okColor.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    setColor(cp.getColor());
+                    cp.dismiss();
+                }
+            });
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    /**
+     * Save app theme color in preferences
+     */
+    private void setColor(int selectedColorRGB) {
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        TabLayout tabs = (TabLayout) findViewById(R.id.tabs);
+        toolbar.setBackgroundColor(selectedColorRGB);
+        tabs.setBackgroundColor(selectedColorRGB);
+
+        SharedPreferences sp = PreferenceManager
+                .getDefaultSharedPreferences(this);
+        sp.edit().putInt("COLOR", selectedColorRGB).commit();
+    }
+    /**
+     * Loads app theme color saved in preferences
+     */
+    private void loadColor() {
+        SharedPreferences sp = PreferenceManager
+                .getDefaultSharedPreferences(this);
+        int color = sp.getInt("COLOR", -1);
+
+        if (color != -1) {
+            setColor(color);
+        }
     }
 }

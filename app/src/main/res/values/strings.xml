@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">TubTub</string>
     <string name="action_about">About me</string>
+    <string name="action_color_picker">Color picker</string>
     <string name="section_format">Hello World from section: %1$d</string>
     <string name="recently_watched_tab">Recently watched</string>
     <string name="search_tab">Search YouTube</string>

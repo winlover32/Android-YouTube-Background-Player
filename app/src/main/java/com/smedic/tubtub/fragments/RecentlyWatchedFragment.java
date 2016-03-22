@@ -19,7 +19,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -89,7 +88,6 @@ public class RecentlyWatchedFragment extends Fragment {
             //do nothing for now
         }
 
-        Log.d(TAG, "onResume - RecentlyWatchedFragment");
         recentlyPlayedVideos.clear();
         recentlyPlayedVideos.addAll(YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.RECENTLY_WATCHED).readAll());
         videoListAdapter.notifyDataSetChanged();

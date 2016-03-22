@@ -18,7 +18,6 @@ package com.smedic.tubtub.fragments;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -80,7 +79,6 @@ public class FavoritesFragment extends Fragment {
         if (!getUserVisibleHint()) {
             //do nothing for now
         }
-        Log.d(TAG, "onResume - RecentlyWatchedFragment");
         favoriteVideos.clear();
         favoriteVideos.addAll(YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.FAVORITE).readAll());
         videoListAdapter.notifyDataSetChanged();
