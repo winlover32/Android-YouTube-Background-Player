@@ -125,6 +125,9 @@ public class YouTubeSqlDb {
          * @return
          */
         public boolean create(YouTubeVideo video) {
+            if(checkIfExists(video.getId())){
+                return false;
+            }
             // Gets the data repository in write mode
             SQLiteDatabase db = dbHelper.getWritableDatabase();
 

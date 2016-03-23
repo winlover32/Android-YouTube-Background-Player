@@ -18,6 +18,7 @@ package com.smedic.tubtub;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -34,6 +35,7 @@ import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 import android.util.SparseArray;
 
+import com.smedic.tubtub.receivers.MediaButtonIntentReceiver;
 import com.smedic.tubtub.utils.Config;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
@@ -130,7 +132,6 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
      * @param intent
      */
     private void handleMedia(Intent intent) {
-
         int intentMediaType = intent.getIntExtra(Config.YOUTUBE_MEDIA_TYPE, Config.YOUTUBE_NO_NEW_REQUEST);
         switch (intentMediaType) {
             case Config.YOUTUBE_NO_NEW_REQUEST: //video is paused,so no new playback requests should be processed
@@ -166,7 +167,17 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
         // permission in AndroidManifest.xml.
         mMediaPlayer.setWakeMode(getApplicationContext(), PowerManager.PARTIAL_WAKE_LOCK);
 
-        mSession = new MediaSessionCompat(getApplicationContext(), "simple player session");
+        ComponentName eventReceiver = new ComponentName(getApplicationContext().getPackageName(),
+                MediaButtonIntentReceiver.class.getName());
+        PendingIntent buttonReceiverIntent = PendingIntent.getBroadcast(
+                getApplicationContext(),
+                0,
+                new Intent(Intent.ACTION_MEDIA_BUTTON),
+                PendingIntent.FLAG_UPDATE_CURRENT
+        );
+
+        mSession = new MediaSessionCompat(getApplicationContext(), "simple player session",
+                eventReceiver, buttonReceiverIntent);
 
         try {
             mController = new MediaControllerCompat(getApplicationContext(), mSession.getSessionToken());
@@ -181,6 +192,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
 
                         @Override
                         public void onPause() {
+
                             super.onPause();
                             pauseVideo();
                             buildNotification(generateAction(android.R.drawable.ic_media_play, "Play", ACTION_PLAY));
@@ -252,6 +264,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
         builder.setShowWhen(false);
         builder.setContentIntent(clickPendingIntent);
         builder.setDeleteIntent(stopPendingIntent);
+        builder.setOngoing(false);
         builder.setStyle(style);
 
         //load bitmap for largeScreen
@@ -274,19 +287,9 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
                     });
         }
 
-        if (mediaType == Config.YOUTUBE_PLAYLIST) {
-            builder.addAction(generateAction(android.R.drawable.ic_media_previous, "Previous", ACTION_PREVIOUS));
-        } else {
-            builder.addAction(0, null, null);
-        }
-
+        builder.addAction(generateAction(android.R.drawable.ic_media_previous, "Previous", ACTION_PREVIOUS));
         builder.addAction(action);
-
-        if (mediaType == Config.YOUTUBE_PLAYLIST) {
-            builder.addAction(generateAction(android.R.drawable.ic_media_next, "Next", ACTION_NEXT));
-        } else {
-            builder.addAction(0, null, null);
-        }
+        builder.addAction(generateAction(android.R.drawable.ic_media_next, "Next", ACTION_NEXT));
 
         style.setShowActionsInCompactView(0, 1, 2);
 
@@ -328,7 +331,6 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
      * Plays next video
      */
     private void playNext() {
-
         if (previousWasCalled) {
             previousWasCalled = false;
             iterator.next();
@@ -347,7 +349,6 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
      * Plays previous video
      */
     private void playPrevious() {
-
         if (nextWasCalled) {
             iterator.previous();
             nextWasCalled = false;
@@ -398,6 +399,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
      * Extracts link from youtube video ID, so mediaPlayer can play it
      */
     private void extractUrlAndPlay() {
+        Log.d(TAG, "extract url");
         String youtubeLink = "http://youtube.com/watch?v=" + videoItem.getId();
         YouTubeUriExtractor ytEx = new YouTubeUriExtractor(this) {
             @Override
