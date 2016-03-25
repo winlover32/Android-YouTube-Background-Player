@@ -164,7 +164,7 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
 
                 Intent serviceIntent = new Intent(getContext(), BackgroundAudioService.class);
                 serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
-                serviceIntent.putExtra(Config.YOUTUBE_MEDIA_TYPE, Config.YOUTUBE_VIDEO);
+                serviceIntent.putExtra(Config.YOUTUBE_TYPE, Config.YOUTUBE_MEDIA_TYPE_VIDEO);
                 serviceIntent.putExtra(Config.YOUTUBE_TYPE_VIDEO, searchResultsList.get(pos));
                 getActivity().startService(serviceIntent);
             }

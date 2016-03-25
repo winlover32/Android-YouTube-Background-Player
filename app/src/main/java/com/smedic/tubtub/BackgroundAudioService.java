@@ -56,7 +56,8 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
 
     private static final String TAG = "SMEDIC service";
 
-    private static final int YOUTUBE_ITAG = 140; //mp4a - stereo, 44.1 KHz 128 Kbps
+    private static final int YOUTUBE_ITAG_140 = 140; //mp4a - stereo, 44.1 KHz 128 Kbps
+    private static final int YOUTUBE_ITAG_18 = 17; //mp4 - stereo, 44.1 KHz 96-100 Kbps
 
     public static final String ACTION_PLAY = "action_play";
     public static final String ACTION_PAUSE = "action_pause";
@@ -68,7 +69,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
     private MediaSessionCompat mSession;
     private MediaControllerCompat mController;
 
-    private int mediaType = Config.YOUTUBE_NO_NEW_REQUEST;
+    private int mediaType = Config.YOUTUBE_MEDIA_NO_NEW_REQUEST;
 
     private YouTubeVideo videoItem;
 
@@ -132,22 +133,23 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
      * @param intent
      */
     private void handleMedia(Intent intent) {
-        int intentMediaType = intent.getIntExtra(Config.YOUTUBE_MEDIA_TYPE, Config.YOUTUBE_NO_NEW_REQUEST);
+        int intentMediaType = intent.getIntExtra(Config.YOUTUBE_TYPE, Config.YOUTUBE_MEDIA_NO_NEW_REQUEST);
         switch (intentMediaType) {
-            case Config.YOUTUBE_NO_NEW_REQUEST: //video is paused,so no new playback requests should be processed
+            case Config.YOUTUBE_MEDIA_NO_NEW_REQUEST: //video is paused,so no new playback requests should be processed
                 mMediaPlayer.start();
                 break;
-            case Config.YOUTUBE_VIDEO:
-                mediaType = Config.YOUTUBE_VIDEO;
+            case Config.YOUTUBE_MEDIA_TYPE_VIDEO:
+                mediaType = Config.YOUTUBE_MEDIA_TYPE_VIDEO;
                 videoItem = (YouTubeVideo) intent.getSerializableExtra(Config.YOUTUBE_TYPE_VIDEO);
                 if (videoItem.getId() != null) {
                     playVideo();
                 }
                 break;
-            case Config.YOUTUBE_PLAYLIST: //new playlist playback request
-                mediaType = Config.YOUTUBE_PLAYLIST;
+            case Config.YOUTUBE_MEDIA_TYPE_PLAYLIST: //new playlist playback request
+                mediaType = Config.YOUTUBE_MEDIA_TYPE_PLAYLIST;
                 youTubeVideos = (ArrayList<YouTubeVideo>) intent.getSerializableExtra(Config.YOUTUBE_TYPE_PLAYLIST);
-                iterator = youTubeVideos.listIterator();
+                int startPosition = intent.getIntExtra(Config.YOUTUBE_TYPE_PLAYLIST_VIDEO_POS, 0);
+                iterator = youTubeVideos.listIterator(startPosition);
                 playNext();
                 break;
             default:
@@ -265,41 +267,44 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
         builder.setContentIntent(clickPendingIntent);
         builder.setDeleteIntent(stopPendingIntent);
         builder.setOngoing(false);
+        builder.setSubText(videoItem.getViewCount());
         builder.setStyle(style);
 
         //load bitmap for largeScreen
         if (videoItem.getThumbnailURL() != null && !videoItem.getThumbnailURL().isEmpty()) {
             Picasso.with(this)
                     .load(videoItem.getThumbnailURL())
-                    .into(new Target() {
-                        @Override
-                        public void onBitmapLoaded(final Bitmap bitmap, Picasso.LoadedFrom from) {
-                            updateNotificationLargeIcon(bitmap);
-                        }
-
-                        @Override
-                        public void onBitmapFailed(Drawable drawable) {
-                        }
-
-                        @Override
-                        public void onPrepareLoad(Drawable drawable) {
-                        }
-                    });
+                    .into(target);
         }
 
         builder.addAction(generateAction(android.R.drawable.ic_media_previous, "Previous", ACTION_PREVIOUS));
         builder.addAction(action);
         builder.addAction(generateAction(android.R.drawable.ic_media_next, "Next", ACTION_NEXT));
-
         style.setShowActionsInCompactView(0, 1, 2);
-
-        //Notification notification = builder.build();
-        //startForeground(R.string.app_name, notification);
 
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.notify(1, builder.build());
 
     }
+
+    /**
+     * Field which handles image loading
+     */
+    private Target target = new Target() {
+        @Override
+        public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom loadedFrom) {
+            updateNotificationLargeIcon(bitmap);
+        }
+
+        @Override
+        public void onBitmapFailed(Drawable drawable) {
+            Log.d(TAG, "Load bitmap... failed");
+        }
+
+        @Override
+        public void onPrepareLoad(Drawable drawable) {
+        }
+    };
 
     /**
      * Updates only large icon in notification panel when bitmap is decoded
@@ -328,9 +333,16 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
     }
 
     /**
-     * Plays next video
+     * Plays next video in playlist
      */
     private void playNext() {
+        //if media type is video not playlist, just loop it
+        if (mediaType == Config.YOUTUBE_MEDIA_TYPE_VIDEO) {
+            seekVideo(0);
+            restartVideo();
+            return;
+        }
+
         if (previousWasCalled) {
             previousWasCalled = false;
             iterator.next();
@@ -346,9 +358,15 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
     }
 
     /**
-     * Plays previous video
+     * Plays previous video in playlist
      */
     private void playPrevious() {
+        //if media type is video not playlist, just loop it
+        if (mediaType == Config.YOUTUBE_MEDIA_TYPE_VIDEO) {
+            restartVideo();
+            return;
+        }
+
         if (nextWasCalled) {
             iterator.previous();
             nextWasCalled = false;
@@ -388,6 +406,15 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
     }
 
     /**
+     * Seeks to specific time
+     *
+     * @param seekTo
+     */
+    private void seekVideo(int seekTo) {
+        mMediaPlayer.seekTo(seekTo);
+    }
+
+    /**
      * Stops video
      */
     private void stopPlayer() {
@@ -399,18 +426,20 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
      * Extracts link from youtube video ID, so mediaPlayer can play it
      */
     private void extractUrlAndPlay() {
-        Log.d(TAG, "extract url");
-        String youtubeLink = "http://youtube.com/watch?v=" + videoItem.getId();
+        final String youtubeLink = "http://youtube.com/watch?v=" + videoItem.getId();
         YouTubeUriExtractor ytEx = new YouTubeUriExtractor(this) {
             @Override
             public void onUrisAvailable(String videoId, String videoTitle, SparseArray<YtFile> ytFiles) {
                 if (ytFiles != null) {
-                    String downloadUrl = ytFiles.get(YOUTUBE_ITAG).getUrl();
+                    YtFile ytFile = ytFiles.get(YOUTUBE_ITAG_140);
+                    if (ytFile == null) {
+                        ytFile = ytFiles.get(YOUTUBE_ITAG_18);
+                    }
                     try {
                         Log.d(TAG, "Start playback");
                         if (mMediaPlayer != null) {
                             mMediaPlayer.reset();
-                            mMediaPlayer.setDataSource(downloadUrl);
+                            mMediaPlayer.setDataSource(ytFile.getUrl());
                             mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
                             mMediaPlayer.prepare();
                             mMediaPlayer.start();
@@ -432,7 +461,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
 
     @Override
     public void onCompletion(MediaPlayer _mediaPlayer) {
-        if (mediaType == Config.YOUTUBE_PLAYLIST) {
+        if (mediaType == Config.YOUTUBE_MEDIA_TYPE_PLAYLIST) {
             playNext();
             buildNotification(generateAction(android.R.drawable.ic_media_pause, "Pause", ACTION_PAUSE));
         } else {

@@ -38,10 +38,11 @@ import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.Button;
 
-import com.pes.androidmaterialcolorpickerdialog.ColorPicker;
+import com.flask.colorpicker.ColorPickerView;
+import com.flask.colorpicker.OnColorSelectedListener;
+import com.flask.colorpicker.builder.ColorPickerClickListener;
+import com.flask.colorpicker.builder.ColorPickerDialogBuilder;
 import com.smedic.tubtub.database.YouTubeSqlDb;
 import com.smedic.tubtub.fragments.FavoritesFragment;
 import com.smedic.tubtub.fragments.PlaylistsFragment;
@@ -62,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
     private TabLayout tabLayout;
     private ViewPager viewPager;
 
-    private ColorPicker cp;
+    private int initialColor = 0xffff0040;
 
     private SearchFragment searchFragment;
     private RecentlyWatchedFragment recentlyPlayedFragment;
@@ -96,8 +97,6 @@ public class MainActivity extends AppCompatActivity {
         tabLayout.setupWithViewPager(viewPager);
 
         networkConf = new NetworkConf(this);
-
-        cp = new ColorPicker(MainActivity.this, 0, 0, 0);
 
         setupTabIcons();
 
@@ -307,7 +306,7 @@ public class MainActivity extends AppCompatActivity {
             AlertDialog alertDialog = new AlertDialog.Builder(MainActivity.this).create();
             alertDialog.setTitle("Stevan Medic");
             alertDialog.setIcon(R.mipmap.ic_launcher);
-            alertDialog.setMessage("TubTub v1.0\n\nvanste25@gmail.com\n\nMarch 2016.\n");
+            alertDialog.setMessage("TubTub v1.01\n\nvanste25@gmail.com\n\nMarch 2016.\n");
             alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
                     new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int which) {
@@ -326,17 +325,32 @@ public class MainActivity extends AppCompatActivity {
             return true;
         } else if (id == R.id.action_color_picker) {
             /* Show color picker dialog */
-            cp.show();
+            ColorPickerDialogBuilder.with(this)
+                    .setTitle("Color picker")
+                    .initialColor(initialColor)
+                    .wheelType(ColorPickerView.WHEEL_TYPE.FLOWER)
+                    .density(12)
+                    .setOnColorSelectedListener(new OnColorSelectedListener() {
+                        @Override
+                        public void onColorSelected(int selectedColor) {
+                            initialColor = selectedColor;
+                        }
+                    })
+                    .setPositiveButton("ok", new ColorPickerClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int selectedColor, Integer[] allColors) {
+                            setColor(selectedColor);
+                        }
+                    })
+                    .setNegativeButton("cancel", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                        }
+                    })
+                    .build()
+                    .show();
 
-            /* On Click listener for the dialog, when the user select the color */
-            Button okColor = (Button) cp.findViewById(R.id.okColorButton);
-            okColor.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    setColor(cp.getColor());
-                    cp.dismiss();
-                }
-            });
+
         }
 
         return super.onOptionsItemSelected(item);
@@ -347,14 +361,15 @@ public class MainActivity extends AppCompatActivity {
      */
     private void setColor(int selectedColorRGB) {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        TabLayout tabs = (TabLayout) findViewById(R.id.tabs);
         toolbar.setBackgroundColor(selectedColorRGB);
-        tabs.setBackgroundColor(selectedColorRGB);
 
+        TabLayout tabs = (TabLayout) findViewById(R.id.tabs);
+        tabs.setBackgroundColor(selectedColorRGB);
         SharedPreferences sp = PreferenceManager
                 .getDefaultSharedPreferences(this);
         sp.edit().putInt("COLOR", selectedColorRGB).commit();
     }
+
     /**
      * Loads app theme color saved in preferences
      */
