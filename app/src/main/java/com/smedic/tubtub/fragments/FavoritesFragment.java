@@ -127,8 +127,9 @@ public class FavoritesFragment extends Fragment {
 
                     Intent serviceIntent = new Intent(getContext(), BackgroundAudioService.class);
                     serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
-                    serviceIntent.putExtra(Config.YOUTUBE_MEDIA_TYPE, Config.YOUTUBE_PLAYLIST);
+                    serviceIntent.putExtra(Config.YOUTUBE_TYPE, Config.YOUTUBE_MEDIA_TYPE_PLAYLIST);
                     serviceIntent.putExtra(Config.YOUTUBE_TYPE_PLAYLIST, favoriteVideos);
+                    serviceIntent.putExtra(Config.YOUTUBE_TYPE_PLAYLIST_VIDEO_POS, pos);
                     getActivity().startService(serviceIntent);
                 } else {
                     conf.createNetErrorDialog();
