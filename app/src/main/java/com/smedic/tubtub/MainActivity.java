@@ -28,6 +28,7 @@ import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.CursorAdapter;
@@ -64,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
     private ViewPager viewPager;
 
     private int initialColor = 0xffff0040;
+    private int initialColors[] = new int[2];
 
     private SearchFragment searchFragment;
     private RecentlyWatchedFragment recentlyPlayedFragment;
@@ -325,21 +327,26 @@ public class MainActivity extends AppCompatActivity {
             return true;
         } else if (id == R.id.action_color_picker) {
             /* Show color picker dialog */
-            ColorPickerDialogBuilder.with(this)
-                    .setTitle("Color picker")
+            ColorPickerDialogBuilder
+                    .with(this)
+                    .setTitle("Choose background and text color")
                     .initialColor(initialColor)
                     .wheelType(ColorPickerView.WHEEL_TYPE.FLOWER)
+                    .setPickerCount(2)
+                    .initialColors(initialColors)
                     .density(12)
                     .setOnColorSelectedListener(new OnColorSelectedListener() {
                         @Override
                         public void onColorSelected(int selectedColor) {
-                            initialColor = selectedColor;
                         }
                     })
                     .setPositiveButton("ok", new ColorPickerClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int selectedColor, Integer[] allColors) {
-                            setColor(selectedColor);
+                            //changeBackgroundColor(selectedColor);
+                            if (allColors != null) {
+                                setColors(allColors[0], allColors[1]);
+                            }
                         }
                     })
                     .setNegativeButton("cancel", new DialogInterface.OnClickListener() {
@@ -347,27 +354,12 @@ public class MainActivity extends AppCompatActivity {
                         public void onClick(DialogInterface dialog, int which) {
                         }
                     })
+                    .showColorEdit(true)
                     .build()
                     .show();
-
-
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    /**
-     * Save app theme color in preferences
-     */
-    private void setColor(int selectedColorRGB) {
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        toolbar.setBackgroundColor(selectedColorRGB);
-
-        TabLayout tabs = (TabLayout) findViewById(R.id.tabs);
-        tabs.setBackgroundColor(selectedColorRGB);
-        SharedPreferences sp = PreferenceManager
-                .getDefaultSharedPreferences(this);
-        sp.edit().putInt("COLOR", selectedColorRGB).commit();
     }
 
     /**
@@ -376,10 +368,35 @@ public class MainActivity extends AppCompatActivity {
     private void loadColor() {
         SharedPreferences sp = PreferenceManager
                 .getDefaultSharedPreferences(this);
-        int color = sp.getInt("COLOR", -1);
+        int backgroundColor = sp.getInt("BACKGROUND_COLOR", -1);
+        int textColor = sp.getInt("TEXT_COLOR", -1);
 
-        if (color != -1) {
-            setColor(color);
+        if (backgroundColor != -1 && textColor != -1) {
+            setColors(backgroundColor, textColor);
+        } else {
+            initialColors = new int[]{
+                    ContextCompat.getColor(this, R.color.colorPrimary),
+                    ContextCompat.getColor(this, R.color.textColorPrimary)};
         }
+    }
+
+    /**
+     * Save app theme color in preferences
+     */
+    private void setColors(int backgroundColor, int textColor) {
+
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbar.setBackgroundColor(backgroundColor);
+        toolbar.setTitleTextColor(textColor);
+        TabLayout tabs = (TabLayout) findViewById(R.id.tabs);
+        tabs.setBackgroundColor(backgroundColor);
+        tabs.setTabTextColors(textColor, textColor);
+        SharedPreferences sp = PreferenceManager
+                .getDefaultSharedPreferences(this);
+        sp.edit().putInt("BACKGROUND_COLOR", backgroundColor).commit();
+        sp.edit().putInt("TEXT_COLOR", textColor).commit();
+
+        initialColors[0] = backgroundColor;
+        initialColors[1] = textColor;
     }
 }

@@ -19,6 +19,7 @@ import android.app.Activity;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException;
@@ -47,6 +48,7 @@ import com.smedic.tubtub.utils.Utils;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.net.UnknownHostException;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -285,14 +287,19 @@ public class YouTubeSearch {
                 try {
                     playlistItemRequest = youtube.playlistItems().list("id,contentDetails,snippet");
                     playlistItemRequest.setPlaylistId(playlistId);
-
+                    playlistItemRequest.setMaxResults(50l);
+                    playlistItemRequest.setFields("items(contentDetails/videoId,snippet/title," +
+                            "snippet/thumbnails/default/url),nextPageToken");
                     // Call API one or more times to retrieve all items in the list. As long as API
                     // response returns a nextPageToken, there are still more items to retrieve.
                     //do {
-                    playlistItemRequest.setPageToken(nextToken);
+                    //playlistItemRequest.setPageToken(nextToken);
                     PlaylistItemListResponse playlistItemResult = playlistItemRequest.execute();
                     playlistItemList.addAll(playlistItemResult.getItems());
+                    //nextToken = playlistItemResult.getNextPageToken();
                     //} while (nextToken != null);
+
+                    Log.d(TAG, "all items size: " + playlistItemList.size());
                 } catch (GoogleJsonResponseException e) {
                     if (e.getStatusCode() == 404) {
                         youTubeVideosReceiver.onPlaylistNotFound(playlistId, e.getStatusCode());
@@ -300,12 +307,14 @@ public class YouTubeSearch {
                     } else {
                         e.printStackTrace();
                     }
+                } catch (UnknownHostException e) {
+                    Toast.makeText(activity.getApplicationContext(), "Check internet connection", Toast.LENGTH_SHORT).show();
+                    e.printStackTrace();
+                    return;
                 } catch (IOException e) {
                     e.printStackTrace();
+                    return;
                 }
-
-                playlistItemRequest.setFields("items(contentDetails/videoId,snippet/title," +
-                        "snippet/thumbnails/default/url),nextPageToken");
 
                 //videos to get duration
                 YouTube.Videos.List videosList = null;
@@ -320,7 +329,7 @@ public class YouTubeSearch {
                     int ii = 0;
                     for (PlaylistItem result : playlistItemList) {
                         contentDetails.append(result.getContentDetails().getVideoId());
-                        if (ii < 49)
+                        if (ii < playlistItemList.size() - 1)
                             contentDetails.append(",");
                         ii++;
                     }
@@ -348,7 +357,6 @@ public class YouTubeSearch {
                     youTubeVideo.setId(playlistItem.getContentDetails().getVideoId());
                     youTubeVideo.setTitle(playlistItem.getSnippet().getTitle());
                     youTubeVideo.setThumbnailURL(playlistItem.getSnippet().getThumbnails().getDefault().getUrl());
-
                     //video info
                     if (videoItem != null) {
                         String isoTime = videoItem.getContentDetails().getDuration();
