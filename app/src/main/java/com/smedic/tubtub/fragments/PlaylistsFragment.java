@@ -23,15 +23,14 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -72,10 +71,9 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
     private static final int REQUEST_AUTHORIZATION = 3;
 
     private YouTubeSearch youTubeSearch;
-    private ImageButton searchPlaylistsButton;
-    private ProgressBar loadingProgressBar;
     private TextView userNameTextView;
     private NetworkConf networkConf;
+    private SwipeRefreshLayout swipeToRefresh;
 
     public PlaylistsFragment() {
         // Required empty public constructor
@@ -93,7 +91,6 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
         youTubeSearch.setYouTubeVideosReceiver(this);
 
         networkConf = new NetworkConf(getActivity());
-
     }
 
     @Override
@@ -103,9 +100,8 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
 
         /* Setup the ListView */
         playlistsListView = (DynamicListView) v.findViewById(R.id.playlists);
-        searchPlaylistsButton = (ImageButton) v.findViewById(R.id.loadButton);
-        loadingProgressBar = (ProgressBar) v.findViewById(R.id.progressBar);
         userNameTextView = (TextView) v.findViewById(R.id.user_name);
+        swipeToRefresh = (SwipeRefreshLayout) v.findViewById(R.id.swipeToRefresh);
 
         setupListViewAndAdapter();
 
@@ -113,26 +109,10 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
             mChosenAccountName = savedInstanceState.getString(ACCOUNT_KEY);
             youTubeSearch.setAuthSelectedAccountName(mChosenAccountName);
             userNameTextView.setText(extractUserName(mChosenAccountName));
+            Toast.makeText(getContext(), "Hi " + extractUserName(mChosenAccountName), Toast.LENGTH_SHORT).show();
         } else {
             loadAccount();
         }
-
-        searchPlaylistsButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                if (networkConf.isNetworkAvailable()) {
-                    if (mChosenAccountName == null) {
-                        chooseAccount();
-                    } else {
-                        loadingProgressBar.setVisibility(View.VISIBLE);
-                        youTubeSearch.searchPlaylists();
-                    }
-                } else {
-                    networkConf.createNetErrorDialog();
-                }
-            }
-        });
 
         return v;
     }
@@ -148,6 +128,7 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
         if (mChosenAccountName != null) {
             youTubeSearch.setAuthSelectedAccountName(mChosenAccountName);
             userNameTextView.setText(extractUserName(mChosenAccountName));
+            Toast.makeText(getContext(), "Hi " + extractUserName(mChosenAccountName), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -213,6 +194,7 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
                         mChosenAccountName = accountName;
                         youTubeSearch.setAuthSelectedAccountName(accountName);
                         userNameTextView.setText(extractUserName(mChosenAccountName));
+                        Toast.makeText(getContext(), "Hi " + extractUserName(mChosenAccountName), Toast.LENGTH_SHORT).show();
                         saveAccount();
                     }
 
@@ -252,6 +234,21 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
                     }
                 }
         );
+
+        swipeToRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                if (networkConf.isNetworkAvailable()) {
+                    if (mChosenAccountName == null) {
+                        chooseAccount();
+                    } else {
+                        youTubeSearch.searchPlaylists();
+                    }
+                } else {
+                    networkConf.createNetErrorDialog();
+                }
+            }
+        });
 
         playlistsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
@@ -340,7 +337,7 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
             public void run() {
                 if (playlistsAdapter != null) {
                     playlistsAdapter.notifyDataSetChanged();
-                    loadingProgressBar.setVisibility(View.INVISIBLE);
+                    swipeToRefresh.setRefreshing(false);
                 }
             }
         });

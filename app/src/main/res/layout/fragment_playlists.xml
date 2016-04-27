@@ -21,14 +21,6 @@
             android:textAppearance="?android:attr/textAppearanceSmall"
             android:layout_gravity="left" />
 
-        <ImageButton
-            android:id="@+id/loadButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="right"
-            android:background="@drawable/refresh_button_selector"
-            android:text="@string/load_playlists" />
-
         <TextView
             android:id="@+id/textView2"
             android:layout_width="wrap_content"
@@ -46,18 +38,15 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <com.nhaarman.listviewanimations.itemmanipulation.DynamicListView
-            android:id="@+id/playlists"
+        <android.support.v4.widget.SwipeRefreshLayout
+            android:id="@+id/swipeToRefresh"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:dividerHeight="3dp" />
-
-        <ProgressBar
-            android:id="@+id/progressBar"
-            android:visibility="invisible"
-            style="?android:attr/progressBarStyleLarge"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center" />
+            android:layout_height="match_parent">
+            <com.nhaarman.listviewanimations.itemmanipulation.DynamicListView
+                android:id="@+id/playlists"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:dividerHeight="3dp" />
+        </android.support.v4.widget.SwipeRefreshLayout>
     </FrameLayout>
 </LinearLayout>
