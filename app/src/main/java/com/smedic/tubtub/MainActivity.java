@@ -262,7 +262,7 @@ public class MainActivity extends AppCompatActivity {
 
                         new JsonAsyncTask(new JsonAsyncTask.AsyncResponse() {
                             @Override
-                            public void processFinish(ArrayList<String> result) {
+                            public void processFinish(List<String> result) {
                                 suggestions.clear();
                                 suggestions.addAll(result);
                                 String[] columns = {

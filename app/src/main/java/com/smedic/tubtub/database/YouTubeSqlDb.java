@@ -27,6 +27,7 @@ import com.smedic.tubtub.YouTubePlaylist;
 import com.smedic.tubtub.YouTubeVideo;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * SQLite database for storing recentlyWatchedVideos and playlist
@@ -164,13 +165,13 @@ public class YouTubeSqlDb {
          *
          * @return
          */
-        public ArrayList<YouTubeVideo> readAll() {
+        public List<YouTubeVideo> readAll() {
 
             final String SELECT_QUERY_ORDER_DESC = "SELECT * FROM " + tableName + " ORDER BY "
                     + YouTubeVideoEntry.COLUMN_ENTRY_ID + " DESC";
 
             SQLiteDatabase db = dbHelper.getReadableDatabase();
-            ArrayList<YouTubeVideo> list = new ArrayList<>();
+            List<YouTubeVideo> list = new ArrayList<>();
 
             Cursor c = db.rawQuery(SELECT_QUERY_ORDER_DESC, null);
             while (c.moveToNext()) {
@@ -241,9 +242,9 @@ public class YouTubeSqlDb {
          *
          * @return
          */
-        public ArrayList<YouTubePlaylist> readAll() {
+        public List<YouTubePlaylist> readAll() {
 
-            ArrayList<YouTubePlaylist> list = new ArrayList<>();
+            List<YouTubePlaylist> list = new ArrayList<>();
             SQLiteDatabase db = dbHelper.getReadableDatabase();
 
             Cursor c = db.rawQuery(YouTubePlaylistEntry.SELECT_QUERY_ORDER_DESC, null);

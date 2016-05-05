@@ -42,6 +42,7 @@ import com.squareup.picasso.Target;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.ListIterator;
 
 import at.huber.youtubeExtractor.YouTubeUriExtractor;
@@ -75,7 +76,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
 
     private boolean isStarting = false;
 
-    private ArrayList<YouTubeVideo> youTubeVideos;
+    private List<YouTubeVideo> youTubeVideos;
     private ListIterator<YouTubeVideo> iterator;
 
     private NotificationCompat.Builder builder = null;

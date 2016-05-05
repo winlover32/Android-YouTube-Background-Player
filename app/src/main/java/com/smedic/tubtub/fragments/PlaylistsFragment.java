@@ -50,6 +50,7 @@ import com.smedic.tubtub.utils.NetworkConf;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Class that handles list of the playlists acquired from YouTube
@@ -59,7 +60,7 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
 
     private static final String TAG = "SMEDIC PlaylistsFrag";
 
-    private ArrayList<YouTubePlaylist> playlists;
+    private List<YouTubePlaylist> playlists;
     private DynamicListView playlistsListView;
     private Handler handler;
     private PlaylistAdapter playlistsAdapter;
@@ -272,7 +273,7 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
      * @param youTubeVideos - list to be played in background service
      */
     @Override
-    public void onVideosReceived(ArrayList<YouTubeVideo> youTubeVideos) {
+    public void onVideosReceived(List<YouTubeVideo> youTubeVideos) {
         //if playlist is empty, do not start service
         if (youTubeVideos.isEmpty()) {
             getActivity().runOnUiThread(new Runnable() {
@@ -323,7 +324,7 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
      * @param youTubePlaylists - list of playlists to be shown in list view
      */
     @Override
-    public void onPlaylistsReceived(ArrayList<YouTubePlaylist> youTubePlaylists) {
+    public void onPlaylistsReceived(List<YouTubePlaylist> youTubePlaylists) {
 
         //refresh playlists in database
         YouTubeSqlDb.getInstance().playlists().deleteAll();
