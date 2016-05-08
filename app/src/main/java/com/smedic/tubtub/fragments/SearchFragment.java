@@ -40,6 +40,7 @@ import com.smedic.tubtub.utils.Config;
 import com.smedic.tubtub.utils.NetworkConf;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Class that handles list of the videos searched on YouTube
@@ -50,8 +51,8 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
     private static final String TAG = "SMEDIC search frag";
     private DynamicListView videosFoundListView;
     private Handler handler;
-    private ArrayList<YouTubeVideo> searchResultsList;
-    private ArrayList<YouTubeVideo> scrollResultsList;
+    private List<YouTubeVideo> searchResultsList;
+    private List<YouTubeVideo> scrollResultsList;
     private VideosAdapter videoListAdapter;
     private YouTubeSearch youTubeSearch;
     private ProgressBar loadingProgressBar;
@@ -196,7 +197,7 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
      * @param youTubeVideos - videos to be shown in list view
      */
     @Override
-    public void onVideosReceived(ArrayList<YouTubeVideo> youTubeVideos) {
+    public void onVideosReceived(List<YouTubeVideo> youTubeVideos) {
         searchResultsList.clear();
         scrollResultsList.clear();
         scrollResultsList.addAll(youTubeVideos);
