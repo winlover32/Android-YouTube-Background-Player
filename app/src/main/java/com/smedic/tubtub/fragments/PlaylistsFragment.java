@@ -302,6 +302,7 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
 
     /**
      * Remove playlist with specific ID from DB and list
+     *
      * @param playlistId
      */
     private void removePlaylist(final String playlistId) {
@@ -350,11 +351,15 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
      * @return
      */
     private String extractUserName(String emailAddress) {
-        String[] parts = emailAddress.split("@");
-        if (parts.length > 0 && parts[0] != null)
-            return parts[0];
-        else
-            return "";
+        if (emailAddress != null) {
+            String[] parts = emailAddress.split("@");
+            if (parts.length > 0) {
+                if (parts[0] != null) {
+                    return parts[0];
+                }
+            }
+        }
+        return "";
     }
 
     /**
