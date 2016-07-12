@@ -32,6 +32,8 @@ import android.support.v4.media.RatingCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v7.app.NotificationCompat;
+import android.telephony.PhoneStateListener;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.util.SparseArray;
 
@@ -96,12 +98,36 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
         mMediaPlayer.setOnCompletionListener(this);
         mMediaPlayer.setOnPreparedListener(this);
         initMediaSessions();
+        initPhoneCallListener();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         handleIntent(intent);
         return super.onStartCommand(intent, flags, startId);
+    }
+
+    private void initPhoneCallListener(){
+        PhoneStateListener phoneStateListener = new PhoneStateListener() {
+            @Override
+            public void onCallStateChanged(int state, String incomingNumber) {
+                if (state == TelephonyManager.CALL_STATE_RINGING) {
+                    //Incoming call: Pause music
+                    pauseVideo();
+                } else if(state == TelephonyManager.CALL_STATE_IDLE) {
+                    //Not in call: Play music
+                    resumeVideo();
+                } else if(state == TelephonyManager.CALL_STATE_OFFHOOK) {
+                    //A call is dialing, active or on hold
+                }
+                super.onCallStateChanged(state, incomingNumber);
+            }
+        };
+
+        TelephonyManager mgr = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
+        if(mgr != null) {
+            mgr.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
+        }
     }
 
     /**
@@ -395,6 +421,15 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
     private void pauseVideo() {
         if (mMediaPlayer.isPlaying()) {
             mMediaPlayer.pause();
+        }
+    }
+
+    /**
+     * Resumes video
+     */
+    private void resumeVideo() {
+        if (mMediaPlayer != null) {
+            mMediaPlayer.start();
         }
     }
 
