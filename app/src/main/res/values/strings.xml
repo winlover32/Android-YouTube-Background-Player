@@ -34,4 +34,8 @@
     <string name="load_playlists">Load</string>
     <string name="user_playlist">Playlists</string>
     <string name="clear_list">Clear recently played list</string>
+
+    <string name="email">vanste25@gmail.com</string>
+    <string name="date">March 2016.</string>
+    <string name="myName">Stevan Medic</string>
 </resources>

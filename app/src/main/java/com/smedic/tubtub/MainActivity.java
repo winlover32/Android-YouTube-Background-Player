@@ -310,9 +310,12 @@ public class MainActivity extends AppCompatActivity {
         if (id == R.id.action_about) {
 
             AlertDialog alertDialog = new AlertDialog.Builder(MainActivity.this).create();
-            alertDialog.setTitle("Stevan Medic");
+            alertDialog.setTitle(getString(R.string.myName));
             alertDialog.setIcon(R.mipmap.ic_launcher);
-            alertDialog.setMessage("TubTub v1.01\n\nvanste25@gmail.com\n\nMarch 2016.\n");
+
+            alertDialog.setMessage(getString(R.string.app_name) + " " + BuildConfig.VERSION_NAME + "\n\n" +
+                    getString(R.string.email) + "\n\n" +
+                    getString(R.string.date) + "\n");
             alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
                     new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int which) {
