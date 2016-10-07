@@ -9,7 +9,7 @@
     <uses-permission android:name="android.permission.MEDIA_CONTENT_CONTROL" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
     <application
         android:allowBackup="true"
@@ -34,13 +34,19 @@
 
         <service
             android:name=".BackgroundAudioService"
-            android:process=":youtube"></service>
+            android:process=":youtube" />
 
-        <receiver android:name="receivers.MediaButtonIntentReceiver" android:enabled="false">
+        <receiver
+            android:name="receivers.MediaButtonIntentReceiver"
+            android:enabled="false">
             <intent-filter>
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
         </receiver>
+
+        <meta-data
+            android:name="io.fabric.ApiKey"
+            android:value="58379b9502342767c97648e66e7b2ce781fac866" />
 
     </application>
 </manifest>
