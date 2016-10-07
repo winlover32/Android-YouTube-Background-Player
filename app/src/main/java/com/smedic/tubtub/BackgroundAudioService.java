@@ -58,9 +58,6 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
 
     private static final String TAG = "SMEDIC service";
 
-    private static final int YOUTUBE_ITAG_140 = 140; //mp4a - stereo, 44.1 KHz 128 Kbps
-    private static final int YOUTUBE_ITAG_17 = 17; //mp4 - stereo, 44.1 KHz 96-100 Kbps
-
     public static final String ACTION_PLAY = "action_play";
     public static final String ACTION_PAUSE = "action_pause";
     public static final String ACTION_NEXT = "action_next";
@@ -458,6 +455,23 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
     }
 
     /**
+     * Get the best available audio stream
+     *
+     * @param ytFiles Array of available streams
+     * @return Audio stream with highest bitrate
+     */
+    private YtFile getBestStream(SparseArray<YtFile> ytFiles) {
+        if (ytFiles.get(141) != null) {
+            return ytFiles.get(141); //mp4a - stereo, 44.1 KHz 256 Kbps
+        } else if (ytFiles.get(251) != null) {
+            return ytFiles.get(251); //webm - stereo, 48 KHz 160 Kbps
+        } else if (ytFiles.get(140) != null) {
+            return ytFiles.get(140);  //mp4a - stereo, 44.1 KHz 128 Kbps
+        }
+        return ytFiles.get(17); //mp4 - stereo, 44.1 KHz 96-100 Kbps
+    }
+
+    /**
      * Extracts link from youtube video ID, so mediaPlayer can play it
      */
     private void extractUrlAndPlay() {
@@ -467,10 +481,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
             @Override
             public void onUrisAvailable(String videoId, String videoTitle, SparseArray<YtFile> ytFiles) {
                 if (ytFiles != null) {
-                    YtFile ytFile = ytFiles.get(YOUTUBE_ITAG_140);
-                    if (ytFile == null) {
-                        ytFile = ytFiles.get(YOUTUBE_ITAG_17);
-                    }
+                    YtFile ytFile = getBestStream(ytFiles);
                     try {
                         Log.d(TAG, "Start playback");
                         if (mMediaPlayer != null) {
