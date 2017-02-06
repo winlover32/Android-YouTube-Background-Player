@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.smedic.tubtub;
+package com.smedic.tubtub.youtube;
 
 import android.app.Activity;
 import android.os.Handler;
@@ -40,8 +40,11 @@ import com.google.api.services.youtube.model.SearchListResponse;
 import com.google.api.services.youtube.model.SearchResult;
 import com.google.api.services.youtube.model.Video;
 import com.google.api.services.youtube.model.VideoListResponse;
+import com.smedic.tubtub.R;
 import com.smedic.tubtub.interfaces.YouTubePlaylistsReceiver;
 import com.smedic.tubtub.interfaces.YouTubeVideosReceiver;
+import com.smedic.tubtub.model.YouTubePlaylist;
+import com.smedic.tubtub.model.YouTubeVideo;
 import com.smedic.tubtub.utils.Auth;
 import com.smedic.tubtub.utils.Config;
 import com.smedic.tubtub.utils.Utils;

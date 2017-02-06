@@ -15,7 +15,7 @@
  */
 package com.smedic.tubtub.interfaces;
 
-import com.smedic.tubtub.YouTubePlaylist;
+import com.smedic.tubtub.model.YouTubePlaylist;
 
 import java.util.ArrayList;
 

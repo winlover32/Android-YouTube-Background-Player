@@ -23,8 +23,8 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.provider.BaseColumns;
 import android.util.Log;
 
-import com.smedic.tubtub.YouTubePlaylist;
-import com.smedic.tubtub.YouTubeVideo;
+import com.smedic.tubtub.model.YouTubePlaylist;
+import com.smedic.tubtub.model.YouTubeVideo;
 
 import java.util.ArrayList;
 
@@ -119,13 +119,14 @@ public class YouTubeSqlDb {
         }
 
         /**
-         * Creates video entry in playlists table
+         * Creates video entry in videos table
          *
          * @param video
          * @return
          */
         public boolean create(YouTubeVideo video) {
             if(checkIfExists(video.getId())){
+                Log.d(TAG, "create: existsssssss");
                 return false;
             }
             // Gets the data repository in write mode

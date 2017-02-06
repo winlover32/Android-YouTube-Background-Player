@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.smedic.tubtub;
+package com.smedic.tubtub.adapters;
 
 import android.app.Activity;
-import android.support.annotation.NonNull;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -26,20 +24,18 @@ import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.nhaarman.listviewanimations.itemmanipulation.swipedismiss.undo.UndoAdapter;
-import com.nhaarman.listviewanimations.util.Swappable;
+import com.smedic.tubtub.R;
 import com.smedic.tubtub.database.YouTubeSqlDb;
+import com.smedic.tubtub.model.YouTubeVideo;
 import com.squareup.picasso.Picasso;
 
 import java.util.List;
-
-import javax.annotation.Nullable;
 
 /**
  * Custom ArrayAdapter which enables setup of a list view row views
  * Created by smedic on 8.2.16..
  */
-public class VideosAdapter extends ArrayAdapter<YouTubeVideo> implements Swappable, UndoAdapter {
+public class VideosAdapter extends ArrayAdapter<YouTubeVideo> {
 
     private Activity context;
     private final List<YouTubeVideo> list;
@@ -115,30 +111,4 @@ public class VideosAdapter extends ArrayAdapter<YouTubeVideo> implements Swappab
         return true;
     }
 
-
-    @Override
-    public void swapItems(int i, int i1) {
-        YouTubeVideo firstItem = getItem(i);
-
-        list.set(i, getItem(i1));
-        list.set(i1, firstItem);
-
-        notifyDataSetChanged();
-    }
-
-    @NonNull
-    @Override
-    public View getUndoView(int i, @Nullable View convertView, @NonNull ViewGroup viewGroup) {
-        View view = convertView;
-        if (view == null) {
-            view = LayoutInflater.from(getContext()).inflate(R.layout.undo_row, viewGroup, false);
-        }
-        return view;
-    }
-
-    @NonNull
-    @Override
-    public View getUndoClickView(@NonNull View view) {
-        return view.findViewById(R.id.undo_row_undobutton);
-    }
 }

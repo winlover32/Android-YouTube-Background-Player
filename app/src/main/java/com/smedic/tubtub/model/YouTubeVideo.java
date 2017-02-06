@@ -13,44 +13,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.smedic.tubtub;
+package com.smedic.tubtub.model;
 
 import java.io.Serializable;
 
 /**
- * YouTube playlist class
- * Created by Stevan Medic on 8.3.16..
+ * YouTube video class
+ * Created by smedic on 3.2.16..
  */
-public class YouTubePlaylist implements Serializable {
-
+public class YouTubeVideo implements Serializable {
+    private String id;
     private String title;
     private String thumbnailURL;
-    private String id;
-    private long numberOfVideos;
-    private String status;
+    private String duration;
+    private String viewCount;
 
-    public YouTubePlaylist() {
+    public YouTubeVideo() {
+        this.id = "";
         this.title = "";
         this.thumbnailURL = "";
-        this.id = "";
-        this.numberOfVideos = 0;
-        this.status = "";
+        this.duration = "";
+        this.viewCount = "";
     }
 
-    public YouTubePlaylist(String title, String thumbnailURL, String id, long numberOfVideos, String status) {
+    public YouTubeVideo(YouTubeVideo newVideo) {
+        this.id = newVideo.id;
+        this.title = newVideo.title;
+        this.thumbnailURL = newVideo.thumbnailURL;
+        this.duration = newVideo.duration;
+        this.viewCount = newVideo.viewCount;
+    }
+
+    public YouTubeVideo(String id, String title, String thumbnailURL, String duration, String viewCount) {
+        this.id = id;
         this.title = title;
         this.thumbnailURL = thumbnailURL;
-        this.id = id;
-        this.numberOfVideos = numberOfVideos;
-        this.status = status;
-    }
-
-    public long getNumberOfVideos() {
-        return numberOfVideos;
-    }
-
-    public void setNumberOfVideos(long numberOfVideos) {
-        this.numberOfVideos = numberOfVideos;
+        this.duration = duration;
+        this.viewCount = viewCount;
     }
 
     public String getId() {
@@ -59,6 +58,14 @@ public class YouTubePlaylist implements Serializable {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getDuration() {
+        return duration;
+    }
+
+    public void setDuration(String duration) {
+        this.duration = duration;
     }
 
     public String getTitle() {
@@ -77,20 +84,19 @@ public class YouTubePlaylist implements Serializable {
         this.thumbnailURL = thumbnail;
     }
 
-    public String getStatus() {
-        return status;
+    public String getViewCount() {
+        return viewCount;
     }
 
-    public void setPrivacy(String status) {
-        this.status = status;
+    public void setViewCount(String viewCount) {
+        this.viewCount = viewCount;
     }
 
     @Override
     public String toString() {
-        return "YouTubePlaylist {" +
+        return "YouTubeVideo {" +
                 "id='" + id + '\'' +
-                ", title='" + title + '\'' + ", number of videos=" + numberOfVideos +
-                ", " + status +
+                ", title='" + title + '\'' +
                 '}';
     }
 }

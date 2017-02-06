@@ -2,7 +2,7 @@ package com.smedic.tubtub.utils;
 
 import android.util.Log;
 
-import com.smedic.tubtub.YouTubeVideo;
+import com.smedic.tubtub.model.YouTubeVideo;
 
 import java.util.Iterator;
 import java.util.List;

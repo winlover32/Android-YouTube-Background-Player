@@ -18,26 +18,26 @@ package com.smedic.tubtub.fragments;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.v4.app.ListFragment;
+import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
+import android.widget.ListView;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
-import com.nhaarman.listviewanimations.appearance.simple.SwingBottomInAnimationAdapter;
-import com.nhaarman.listviewanimations.itemmanipulation.DynamicListView;
 import com.smedic.tubtub.BackgroundAudioService;
 import com.smedic.tubtub.R;
-import com.smedic.tubtub.VideosAdapter;
-import com.smedic.tubtub.YouTubeSearch;
-import com.smedic.tubtub.YouTubeVideo;
+import com.smedic.tubtub.adapters.VideosAdapter;
 import com.smedic.tubtub.database.YouTubeSqlDb;
 import com.smedic.tubtub.interfaces.YouTubeVideosReceiver;
+import com.smedic.tubtub.model.YouTubeVideo;
 import com.smedic.tubtub.utils.Config;
 import com.smedic.tubtub.utils.NetworkConf;
+import com.smedic.tubtub.youtube.YouTubeSearch;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,10 +46,10 @@ import java.util.List;
  * Class that handles list of the videos searched on YouTube
  * Created by smedic on 7.3.16..
  */
-public class SearchFragment extends ListFragment implements YouTubeVideosReceiver {
+public class SearchFragment extends Fragment implements YouTubeVideosReceiver {
 
     private static final String TAG = "SMEDIC search frag";
-    private DynamicListView videosFoundListView;
+    private ListView videosFoundListView;
     private Handler handler;
     private ArrayList<YouTubeVideo> searchResultsList;
     private ArrayList<YouTubeVideo> scrollResultsList;
@@ -79,8 +79,18 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View v = inflater.inflate(R.layout.fragment_search, container, false);
-        loadingProgressBar = (ProgressBar) v.findViewById(R.id.progressBar);
+        View v = inflater.inflate(R.layout.fragment_list, container, false);
+        TextView fragmentListTitle = (TextView) v.findViewById(R.id.fragment_title_text_view);
+        fragmentListTitle.setText(getString(R.string.search_tab));
+        videosFoundListView = (ListView) v.findViewById(R.id.fragment_list_items);
+        loadingProgressBar = (ProgressBar) v.findViewById(R.id.fragment_progress_bar);
+        videoListAdapter = new VideosAdapter(getActivity(), searchResultsList, false);
+        videosFoundListView.setAdapter(videoListAdapter);
+
+        //disable swipe to refresh for this tab
+        v.findViewById(R.id.swipe_to_refresh).setEnabled(false);
+
+        addListeners();
         return v;
     }
 
@@ -106,24 +116,6 @@ public class SearchFragment extends ListFragment implements YouTubeVideosReceive
 
         youTubeSearch = new YouTubeSearch(getActivity(), this);
         youTubeSearch.setYouTubeVideosReceiver(this);
-    }
-
-    @Override
-    public void onActivityCreated(Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-        videosFoundListView = (DynamicListView) getListView();
-        setupListViewAndAdapter();
-        addListeners();
-    }
-
-    /**
-     * Setups custom adapter which enables animations when adding elements
-     */
-    private void setupListViewAndAdapter() {
-        videoListAdapter = new VideosAdapter(getActivity(), searchResultsList, false);
-        SwingBottomInAnimationAdapter animationAdapter = new SwingBottomInAnimationAdapter(videoListAdapter);
-        animationAdapter.setAbsListView(videosFoundListView);
-        videosFoundListView.setAdapter(animationAdapter);
     }
 
     /**

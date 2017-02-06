@@ -22,16 +22,15 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.nhaarman.listviewanimations.appearance.simple.SwingBottomInAnimationAdapter;
-import com.nhaarman.listviewanimations.itemmanipulation.DynamicListView;
 import com.smedic.tubtub.BackgroundAudioService;
 import com.smedic.tubtub.R;
-import com.smedic.tubtub.VideosAdapter;
-import com.smedic.tubtub.YouTubeVideo;
+import com.smedic.tubtub.adapters.VideosAdapter;
 import com.smedic.tubtub.database.YouTubeSqlDb;
+import com.smedic.tubtub.model.YouTubeVideo;
 import com.smedic.tubtub.utils.Config;
 import com.smedic.tubtub.utils.NetworkConf;
 
@@ -44,7 +43,7 @@ public class FavoritesFragment extends Fragment {
     private static final String TAG = "SMEDIC Favorites";
     private ArrayList<YouTubeVideo> favoriteVideos;
 
-    private DynamicListView favoritesListView;
+    private ListView favoritesListView;
     private VideosAdapter videoListAdapter;
     private NetworkConf conf;
 
@@ -64,21 +63,23 @@ public class FavoritesFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View v = inflater.inflate(R.layout.fragment_recently_watched, container, false);
+        View v = inflater.inflate(R.layout.fragment_list, container, false);
         TextView fragmentListTitle = (TextView) v.findViewById(R.id.fragment_title_text_view);
-        fragmentListTitle.setText("Favorites");
-        favoritesListView = (DynamicListView) v.findViewById(R.id.recently_played);
-        setupListViewAndAdapter();
+        fragmentListTitle.setText(getString(R.string.favorite_watched_tab));
+        favoritesListView = (ListView) v.findViewById(R.id.fragment_list_items);
+        videoListAdapter = new VideosAdapter(getActivity(), favoriteVideos, false);
+        favoritesListView.setAdapter(videoListAdapter);
+
+        //disable swipe to refresh for this tab
+        v.findViewById(R.id.swipe_to_refresh).setEnabled(false);
+
+        addListeners();
         return v;
     }
 
     @Override
     public void onResume() {
         super.onResume();
-
-        if (!getUserVisibleHint()) {
-            //do nothing for now
-        }
         favoriteVideos.clear();
         favoriteVideos.addAll(YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.FAVORITE).readAll());
         videoListAdapter.notifyDataSetChanged();
@@ -94,20 +95,6 @@ public class FavoritesFragment extends Fragment {
             //Otherwise allow natural fragment lifecycle to call onResume
             onResume();
         }
-    }
-
-    /**
-     * Setups list view and adapter for storing recently watched YouTube videos
-     */
-    private void setupListViewAndAdapter() {
-
-        /* Setup the adapter */
-        videoListAdapter = new VideosAdapter(getActivity(), favoriteVideos, true);
-        SwingBottomInAnimationAdapter animationAdapter = new SwingBottomInAnimationAdapter(videoListAdapter);
-        animationAdapter.setAbsListView(favoritesListView);
-        favoritesListView.setAdapter(videoListAdapter);
-
-        addListeners();
     }
 
     /**

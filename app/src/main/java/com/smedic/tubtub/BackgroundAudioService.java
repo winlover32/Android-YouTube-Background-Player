@@ -18,7 +18,6 @@ package com.smedic.tubtub;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -37,7 +36,7 @@ import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.util.SparseArray;
 
-import com.smedic.tubtub.receivers.MediaButtonIntentReceiver;
+import com.smedic.tubtub.model.YouTubeVideo;
 import com.smedic.tubtub.utils.Config;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
@@ -192,8 +191,6 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
         // permission in AndroidManifest.xml.
         mMediaPlayer.setWakeMode(getApplicationContext(), PowerManager.PARTIAL_WAKE_LOCK);
 
-        ComponentName eventReceiver = new ComponentName(getApplicationContext().getPackageName(),
-                MediaButtonIntentReceiver.class.getName());
         PendingIntent buttonReceiverIntent = PendingIntent.getBroadcast(
                 getApplicationContext(),
                 0,
@@ -202,7 +199,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
         );
 
         mSession = new MediaSessionCompat(getApplicationContext(), "simple player session",
-                eventReceiver, buttonReceiverIntent);
+                null, buttonReceiverIntent);
 
         try {
             mController = new MediaControllerCompat(getApplicationContext(), mSession.getSessionToken());
