@@ -29,25 +29,21 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.nhaarman.listviewanimations.appearance.simple.SwingBottomInAnimationAdapter;
-import com.nhaarman.listviewanimations.itemmanipulation.DynamicListView;
-import com.nhaarman.listviewanimations.util.Swappable;
 import com.smedic.tubtub.BackgroundAudioService;
 import com.smedic.tubtub.R;
-import com.smedic.tubtub.YouTubePlaylist;
-import com.smedic.tubtub.YouTubeSearch;
-import com.smedic.tubtub.YouTubeVideo;
+import com.smedic.tubtub.adapters.PlaylistsAdapter;
 import com.smedic.tubtub.database.YouTubeSqlDb;
 import com.smedic.tubtub.interfaces.YouTubePlaylistsReceiver;
 import com.smedic.tubtub.interfaces.YouTubeVideosReceiver;
+import com.smedic.tubtub.model.YouTubePlaylist;
+import com.smedic.tubtub.model.YouTubeVideo;
 import com.smedic.tubtub.utils.Config;
 import com.smedic.tubtub.utils.NetworkConf;
-import com.squareup.picasso.Picasso;
+import com.smedic.tubtub.youtube.YouTubeSearch;
 
 import java.util.ArrayList;
 
@@ -60,9 +56,9 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
     private static final String TAG = "SMEDIC PlaylistsFrag";
 
     private ArrayList<YouTubePlaylist> playlists;
-    private DynamicListView playlistsListView;
+    private ListView playlistsListView;
     private Handler handler;
-    private PlaylistAdapter playlistsAdapter;
+    private PlaylistsAdapter playlistsAdapter;
 
     public static final String ACCOUNT_KEY = "accountName";
     private String mChosenAccountName;
@@ -96,12 +92,15 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_playlists, container, false);
+        View v = inflater.inflate(R.layout.fragment_list, container, false);
+        TextView fragmentListTitle = (TextView) v.findViewById(R.id.fragment_title_text_view);
+        fragmentListTitle.setText(getString(R.string.playlists_tab));
 
         /* Setup the ListView */
-        playlistsListView = (DynamicListView) v.findViewById(R.id.playlists);
+        playlistsListView = (ListView) v.findViewById(R.id.fragment_list_items);
         userNameTextView = (TextView) v.findViewById(R.id.user_name);
-        swipeToRefresh = (SwipeRefreshLayout) v.findViewById(R.id.swipeToRefresh);
+        userNameTextView.setVisibility(View.VISIBLE);
+        swipeToRefresh = (SwipeRefreshLayout) v.findViewById(R.id.swipe_to_refresh);
 
         setupListViewAndAdapter();
 
@@ -217,23 +216,8 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
      * Setups list view and adapter for storing YouTube playlists
      */
     public void setupListViewAndAdapter() {
-        playlistsAdapter = new PlaylistAdapter(getActivity());
-        SwingBottomInAnimationAdapter animationAdapter = new SwingBottomInAnimationAdapter(playlistsAdapter);
-        animationAdapter.setAbsListView(playlistsListView);
-        playlistsListView.setAdapter(animationAdapter);
-
-        /* Enable drag and drop functionality */
-        playlistsListView.enableDragAndDrop();
-        playlistsListView.setOnItemLongClickListener(
-                new AdapterView.OnItemLongClickListener() {
-                    @Override
-                    public boolean onItemLongClick(final AdapterView<?> parent, final View view,
-                                                   final int position, final long id) {
-                        playlistsListView.startDragging(position);
-                        return true;
-                    }
-                }
-        );
+        playlistsAdapter = new PlaylistsAdapter(getActivity(), playlists);
+        playlistsListView.setAdapter(playlistsAdapter);
 
         swipeToRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
@@ -360,58 +344,5 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
             }
         }
         return "";
-    }
-
-    /**
-     * Custom array adapter class which enables drag and drop list items swapping
-     */
-    public class PlaylistAdapter extends ArrayAdapter<YouTubePlaylist> implements Swappable {
-
-        public PlaylistAdapter(Activity context) {
-            super(context, R.layout.video_item, playlists);
-        }
-
-        @Override
-        public View getView(final int position, View convertView, ViewGroup parent) {
-
-            if (convertView == null) {
-                convertView = getActivity().getLayoutInflater().inflate(R.layout.playlist_item, parent, false);
-            }
-            ImageView thumbnail = (ImageView) convertView.findViewById(R.id.video_thumbnail);
-            TextView title = (TextView) convertView.findViewById(R.id.playlist_title);
-            TextView videosNumber = (TextView) convertView.findViewById(R.id.videos_number);
-            TextView privacy = (TextView) convertView.findViewById(R.id.privacy);
-
-            YouTubePlaylist searchResult = playlists.get(position);
-
-            Picasso.with(getContext()).load(searchResult.getThumbnailURL()).into(thumbnail);
-            title.setText(searchResult.getTitle());
-            videosNumber.setText("Number of videos: " + String.valueOf(searchResult.getNumberOfVideos()));
-            privacy.setText("Status: " + searchResult.getStatus());
-
-            return convertView;
-        }
-
-        @Override
-        public long getItemId(int i) {
-            return getItem(i).hashCode();
-        }
-
-
-        @Override
-        public boolean hasStableIds() {
-            return true;
-        }
-
-
-        @Override
-        public void swapItems(int i, int i1) {
-            YouTubePlaylist firstItem = getItem(i);
-
-            playlists.set(i, getItem(i1));
-            playlists.set(i1, firstItem);
-
-            notifyDataSetChanged();
-        }
     }
 }

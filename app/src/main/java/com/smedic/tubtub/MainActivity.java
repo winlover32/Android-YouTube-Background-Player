@@ -50,6 +50,7 @@ import com.smedic.tubtub.fragments.PlaylistsFragment;
 import com.smedic.tubtub.fragments.RecentlyWatchedFragment;
 import com.smedic.tubtub.fragments.SearchFragment;
 import com.smedic.tubtub.utils.NetworkConf;
+import com.smedic.tubtub.youtube.JsonAsyncTask;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,10 +72,10 @@ public class MainActivity extends AppCompatActivity {
     private RecentlyWatchedFragment recentlyPlayedFragment;
 
     private int[] tabIcons = {
-            R.drawable.ic_favorite_tab_icon,
-            android.R.drawable.ic_menu_recent_history,
-            android.R.drawable.ic_menu_search,
-            android.R.drawable.ic_menu_upload_you_tube
+            R.drawable.ic_action_heart,
+            R.drawable.ic_recently_wached,
+            R.drawable.ic_search,
+            R.drawable.ic_action_playlist
     };
 
     private NetworkConf networkConf;
@@ -157,10 +158,10 @@ public class MainActivity extends AppCompatActivity {
 
         searchFragment = new SearchFragment();
         recentlyPlayedFragment = new RecentlyWatchedFragment();
-        adapter.addFragment(new FavoritesFragment(), "Favorites");
-        adapter.addFragment(recentlyPlayedFragment, "Recently watched");
-        adapter.addFragment(searchFragment, "Search");
-        adapter.addFragment(new PlaylistsFragment(), "Playlists");
+        adapter.addFragment(new FavoritesFragment(), null);
+        adapter.addFragment(recentlyPlayedFragment, null);
+        adapter.addFragment(searchFragment, null);
+        adapter.addFragment(new PlaylistsFragment(), null);
         viewPager.setAdapter(adapter);
     }
 
@@ -217,7 +218,7 @@ public class MainActivity extends AppCompatActivity {
 
         //suggestions
         final CursorAdapter suggestionAdapter = new SimpleCursorAdapter(this,
-                R.layout.dropdown_menu,
+                R.layout.suggestions,
                 null,
                 new String[]{SearchManager.SUGGEST_COLUMN_TEXT_1},
                 new int[]{android.R.id.text1},
@@ -259,9 +260,9 @@ public class MainActivity extends AppCompatActivity {
 
                     if (networkConf.isNetworkAvailable()) {
 
-                        new JsonAsyncTask(new JsonAsyncTask.AsyncResponse() {
+                        new JsonAsyncTask(new JsonAsyncTask.OnSuggestionsLoadedListener() {
                             @Override
-                            public void processFinish(ArrayList<String> result) {
+                            public void OnSuggestionsLoaded(ArrayList<String> result) {
                                 suggestions.clear();
                                 suggestions.addAll(result);
                                 String[] columns = {

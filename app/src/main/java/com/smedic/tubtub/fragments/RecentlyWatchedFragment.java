@@ -17,30 +17,24 @@ package com.smedic.tubtub.fragments;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
-import com.nhaarman.listviewanimations.appearance.simple.SwingBottomInAnimationAdapter;
-import com.nhaarman.listviewanimations.itemmanipulation.DynamicListView;
-import com.nhaarman.listviewanimations.itemmanipulation.swipedismiss.OnDismissCallback;
-import com.nhaarman.listviewanimations.itemmanipulation.swipedismiss.undo.SimpleSwipeUndoAdapter;
 import com.smedic.tubtub.BackgroundAudioService;
 import com.smedic.tubtub.R;
-import com.smedic.tubtub.VideosAdapter;
-import com.smedic.tubtub.YouTubeVideo;
+import com.smedic.tubtub.adapters.VideosAdapter;
 import com.smedic.tubtub.database.YouTubeSqlDb;
+import com.smedic.tubtub.model.YouTubeVideo;
 import com.smedic.tubtub.utils.Config;
 import com.smedic.tubtub.utils.NetworkConf;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-
-import javax.annotation.Nullable;
 
 /**
  * Class that handles list of the recently watched YouTube
@@ -51,7 +45,7 @@ public class RecentlyWatchedFragment extends Fragment {
     private static final String TAG = "SMEDIC RecentlyWatched";
     private ArrayList<YouTubeVideo> recentlyPlayedVideos;
 
-    private DynamicListView recentlyPlayedListView;
+    private ListView recentlyPlayedListView;
     private VideosAdapter videoListAdapter;
 
     private NetworkConf conf;
@@ -72,11 +66,17 @@ public class RecentlyWatchedFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View v = inflater.inflate(R.layout.fragment_recently_watched, container, false);
+        View v = inflater.inflate(R.layout.fragment_list, container, false);
+        TextView fragmentListTitle = (TextView) v.findViewById(R.id.fragment_title_text_view);
+        fragmentListTitle.setText(getString(R.string.recently_watched_tab));
+        recentlyPlayedListView = (ListView) v.findViewById(R.id.fragment_list_items);
+        videoListAdapter = new VideosAdapter(getActivity(), recentlyPlayedVideos, false);
+        recentlyPlayedListView.setAdapter(videoListAdapter);
 
-        recentlyPlayedListView = (DynamicListView) v.findViewById(R.id.recently_played);
-        setupListViewAndAdapter();
+        //disable swipe to refresh for this tab
+        v.findViewById(R.id.swipe_to_refresh).setEnabled(false);
 
+        addListeners();
         return v;
     }
 
@@ -107,38 +107,6 @@ public class RecentlyWatchedFragment extends Fragment {
     }
 
     /**
-     * Setups list view and adapter for storing recently watched YouTube videos
-     */
-    private void setupListViewAndAdapter() {
-
-        /* Setup the adapter */
-        videoListAdapter = new VideosAdapter(getActivity(), recentlyPlayedVideos, false);
-        SimpleSwipeUndoAdapter simpleSwipeUndoAdapter = new SimpleSwipeUndoAdapter(videoListAdapter, getContext(), new MyOnDismissCallback());
-        SwingBottomInAnimationAdapter animationAdapter = new SwingBottomInAnimationAdapter(simpleSwipeUndoAdapter);
-        animationAdapter.setAbsListView(recentlyPlayedListView);
-        recentlyPlayedListView.setAdapter(animationAdapter);
-
-        /* Enable drag and drop functionality */
-        recentlyPlayedListView.enableDragAndDrop();
-        //recentlyPlayedListView.setDraggableManager(new TouchViewDraggableManager(R.id.row_item));
-        recentlyPlayedListView.setOnItemLongClickListener(
-                new AdapterView.OnItemLongClickListener() {
-                    @Override
-                    public boolean onItemLongClick(final AdapterView<?> parent, final View view,
-                                                   final int position, final long id) {
-                        recentlyPlayedListView.startDragging(position);
-                        return true;
-                    }
-                }
-        );
-
-        /* Enable swipe to dismiss with Undo */
-        recentlyPlayedListView.enableSimpleSwipeUndo();
-
-        addListeners();
-    }
-
-    /**
      * Adds listener for list item choosing
      */
     void addListeners() {
@@ -163,35 +131,6 @@ public class RecentlyWatchedFragment extends Fragment {
                 }
             }
         });
-    }
-
-    /**
-     * Callback which handles onDismiss event of a list item
-     */
-    private class MyOnDismissCallback implements OnDismissCallback {
-
-        @Nullable
-        private Toast mToast;
-
-        @Override
-        public void onDismiss(@NonNull final ViewGroup listView, @NonNull final int[] reverseSortedPositions) {
-            for (int position : reverseSortedPositions) {
-                YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.RECENTLY_WATCHED).
-                        delete(recentlyPlayedVideos.get(position).getId());
-                recentlyPlayedVideos.remove(position);
-                videoListAdapter.notifyDataSetChanged();
-            }
-
-            if (mToast != null) {
-                mToast.cancel();
-            }
-            mToast = Toast.makeText(
-                    getActivity(),
-                    getString(R.string.removed_positions, Arrays.toString(reverseSortedPositions)),
-                    Toast.LENGTH_LONG
-            );
-            mToast.show();
-        }
     }
 
     /**
