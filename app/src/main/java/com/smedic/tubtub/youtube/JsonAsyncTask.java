@@ -36,21 +36,21 @@ import java.util.ArrayList;
  * Created by Stevan Medic on 19.2.16..
  */
 public class JsonAsyncTask extends AsyncTask<String, Void, ArrayList<String>> {
-    private static final String TAG = "SMEDIC JSON";
+    private static final String TAG = "SMEDIC JsonAsyncTask";
 
-    private final int JSON_ERROR = 0;
-    private final int JSON_ARRAY = 1;
-    private final int JSON_OBJECT = 2;
+    private static final int JSON_ERROR = 0;
+    private static final int JSON_ARRAY = 1;
+    private static final int JSON_OBJECT = 2;
 
     // you may separate this or combined to caller class.
-    public interface AsyncResponse {
-        void processFinish(ArrayList<String> result);
+    public interface OnSuggestionsLoadedListener {
+        void OnSuggestionsLoaded(ArrayList<String> result);
     }
 
-    public AsyncResponse delegate = null;
+    public OnSuggestionsLoadedListener listener = null;
 
-    public JsonAsyncTask(AsyncResponse delegate) {
-        this.delegate = delegate;
+    public JsonAsyncTask(OnSuggestionsLoadedListener listener) {
+        this.listener = listener;
     }
 
     @Override
@@ -112,7 +112,7 @@ public class JsonAsyncTask extends AsyncTask<String, Void, ArrayList<String>> {
 
     @Override
     protected void onPostExecute(ArrayList<String> result) {
-        delegate.processFinish(result);
+        listener.OnSuggestionsLoaded(result);
     }
 
     /**

@@ -260,9 +260,9 @@ public class MainActivity extends AppCompatActivity {
 
                     if (networkConf.isNetworkAvailable()) {
 
-                        new JsonAsyncTask(new JsonAsyncTask.AsyncResponse() {
+                        new JsonAsyncTask(new JsonAsyncTask.OnSuggestionsLoadedListener() {
                             @Override
-                            public void processFinish(ArrayList<String> result) {
+                            public void OnSuggestionsLoaded(ArrayList<String> result) {
                                 suggestions.clear();
                                 suggestions.addAll(result);
                                 String[] columns = {
