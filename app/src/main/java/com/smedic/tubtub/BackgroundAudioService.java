@@ -241,6 +241,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
                         @Override
                         public void onStop() {
                             super.onStop();
+                            Log.d(TAG, "onStop: ");
                             stopPlayer();
                             //remove notification and stop service
                             NotificationManager notificationManager = (NotificationManager) getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
@@ -449,6 +450,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
     private void stopPlayer() {
         mMediaPlayer.stop();
         mMediaPlayer.release();
+        mMediaPlayer = null;
     }
 
     /**
@@ -472,15 +474,15 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
      * Extracts link from youtube video ID, so mediaPlayer can play it
      */
     private void extractUrlAndPlay() {
-        Log.d(TAG, "extractUrlAndPlay: extract url for video id=" + videoItem.getId());
-        final String youtubeLink = "http://youtube.com/watch?v=" + videoItem.getId();
+
+        String youtubeLink = "http://youtube.com/watch?v=" + videoItem.getId();
         YouTubeUriExtractor ytEx = new YouTubeUriExtractor(this) {
             @Override
             public void onUrisAvailable(String videoId, String videoTitle, SparseArray<YtFile> ytFiles) {
                 if (ytFiles != null) {
                     YtFile ytFile = getBestStream(ytFiles);
                     try {
-                        Log.d(TAG, "Start playback");
+                        Log.d(TAG, "Start playback - video id: " + videoItem.getId());
                         if (mMediaPlayer != null) {
                             mMediaPlayer.reset();
                             mMediaPlayer.setDataSource(ytFile.getUrl());

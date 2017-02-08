@@ -126,7 +126,6 @@ public class YouTubeSqlDb {
          */
         public boolean create(YouTubeVideo video) {
             if(checkIfExists(video.getId())){
-                Log.d(TAG, "create: existsssssss");
                 return false;
             }
             // Gets the data repository in write mode
