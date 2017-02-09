@@ -17,7 +17,6 @@ package com.smedic.tubtub.fragments;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,6 +29,7 @@ import com.smedic.tubtub.BackgroundAudioService;
 import com.smedic.tubtub.R;
 import com.smedic.tubtub.adapters.VideosAdapter;
 import com.smedic.tubtub.database.YouTubeSqlDb;
+import com.smedic.tubtub.model.ItemType;
 import com.smedic.tubtub.model.YouTubeVideo;
 import com.smedic.tubtub.utils.Config;
 import com.smedic.tubtub.utils.NetworkConf;
@@ -40,7 +40,7 @@ import java.util.ArrayList;
  * Class that handles list of the recently watched YouTube
  * Created by smedic on 7.3.16..
  */
-public class RecentlyWatchedFragment extends Fragment {
+public class RecentlyWatchedFragment extends BaseFragment {
 
     private static final String TAG = "SMEDIC RecentlyWatched";
     private ArrayList<YouTubeVideo> recentlyPlayedVideos;
@@ -71,6 +71,7 @@ public class RecentlyWatchedFragment extends Fragment {
         fragmentListTitle.setText(getString(R.string.recently_watched_tab));
         recentlyPlayedListView = (ListView) v.findViewById(R.id.fragment_list_items);
         videoListAdapter = new VideosAdapter(getActivity(), recentlyPlayedVideos, false);
+        videoListAdapter.setOnItemEventsListener(this);
         recentlyPlayedListView.setAdapter(videoListAdapter);
 
         //disable swipe to refresh for this tab
@@ -123,7 +124,7 @@ public class RecentlyWatchedFragment extends Fragment {
 
                     Intent serviceIntent = new Intent(getContext(), BackgroundAudioService.class);
                     serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
-                    serviceIntent.putExtra(Config.YOUTUBE_TYPE, Config.YOUTUBE_MEDIA_TYPE_VIDEO);
+                    serviceIntent.putExtra(Config.YOUTUBE_TYPE, ItemType.YOUTUBE_MEDIA_TYPE_VIDEO);
                     serviceIntent.putExtra(Config.YOUTUBE_TYPE_VIDEO, recentlyPlayedVideos.get(pos));
                     getActivity().startService(serviceIntent);
                 } else {

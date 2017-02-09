@@ -12,6 +12,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.smedic.tubtub.R;
+import com.smedic.tubtub.interfaces.ItemEventsListener;
+import com.smedic.tubtub.model.ItemType;
 import com.smedic.tubtub.model.YouTubePlaylist;
 import com.squareup.picasso.Picasso;
 
@@ -24,6 +26,7 @@ public class PlaylistsAdapter extends ArrayAdapter<YouTubePlaylist> {
 
     private Activity context;
     private List<YouTubePlaylist> playlists;
+    private ItemEventsListener itemEventsListener;
 
     public PlaylistsAdapter(Activity context, List<YouTubePlaylist> playlists) {
         super(context, R.layout.video_item, playlists);
@@ -41,8 +44,9 @@ public class PlaylistsAdapter extends ArrayAdapter<YouTubePlaylist> {
         TextView title = (TextView) convertView.findViewById(R.id.playlist_title);
         TextView videosNumber = (TextView) convertView.findViewById(R.id.videos_number);
         TextView privacy = (TextView) convertView.findViewById(R.id.privacy);
+        ImageView shareButton = (ImageView) convertView.findViewById(R.id.share_button);
 
-        YouTubePlaylist searchResult = playlists.get(position);
+        final YouTubePlaylist searchResult = playlists.get(position);
 
         Picasso.with(getContext()).load(searchResult.getThumbnailURL()).into(thumbnail);
         title.setText(searchResult.getTitle());
@@ -51,7 +55,21 @@ public class PlaylistsAdapter extends ArrayAdapter<YouTubePlaylist> {
         String status = context.getString(R.string.status) + searchResult.getStatus();
         privacy.setText(status);
 
+        shareButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (itemEventsListener != null) {
+                    itemEventsListener.onShareClicked(ItemType.YOUTUBE_MEDIA_TYPE_PLAYLIST,
+                            searchResult.getId());
+                }
+            }
+        });
+
         return convertView;
+    }
+
+    public void setOnItemEventsListener(ItemEventsListener listener) {
+        itemEventsListener = listener;
     }
 
     @Override

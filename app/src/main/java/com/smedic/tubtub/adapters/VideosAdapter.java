@@ -26,6 +26,8 @@ import android.widget.TextView;
 
 import com.smedic.tubtub.R;
 import com.smedic.tubtub.database.YouTubeSqlDb;
+import com.smedic.tubtub.interfaces.ItemEventsListener;
+import com.smedic.tubtub.model.ItemType;
 import com.smedic.tubtub.model.YouTubeVideo;
 import com.squareup.picasso.Picasso;
 
@@ -41,6 +43,7 @@ public class VideosAdapter extends ArrayAdapter<YouTubeVideo> {
     private final List<YouTubeVideo> list;
     private boolean[] itemChecked;
     private boolean isFavoriteList;
+    private ItemEventsListener itemEventsListener;
 
     public VideosAdapter(Activity context, List<YouTubeVideo> list, boolean isFavoriteList) {
         super(context, R.layout.video_item, list);
@@ -59,7 +62,8 @@ public class VideosAdapter extends ArrayAdapter<YouTubeVideo> {
         TextView title = (TextView) convertView.findViewById(R.id.video_title);
         TextView duration = (TextView) convertView.findViewById(R.id.video_duration);
         TextView viewCount = (TextView) convertView.findViewById(R.id.views_number);
-        CheckBox checkBox = (CheckBox) convertView.findViewById(R.id.imageButton);
+        CheckBox favoriteCheckBox = (CheckBox) convertView.findViewById(R.id.favoriteButton);
+        ImageView shareButton = (ImageView) convertView.findViewById(R.id.shareButton);
 
         final YouTubeVideo searchResult = list.get(position);
 
@@ -74,15 +78,15 @@ public class VideosAdapter extends ArrayAdapter<YouTubeVideo> {
         } else {
             itemChecked[position] = false;
         }
-        checkBox.setChecked(itemChecked[position]);
+        favoriteCheckBox.setChecked(itemChecked[position]);
 
-        checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        favoriteCheckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton btn, boolean isChecked) {
                 itemChecked[position] = isChecked;
             }
         });
 
-        checkBox.setOnClickListener(new View.OnClickListener() {
+        favoriteCheckBox.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (((CheckBox) v).isChecked()) {
@@ -97,7 +101,21 @@ public class VideosAdapter extends ArrayAdapter<YouTubeVideo> {
             }
         });
 
+        shareButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (itemEventsListener != null) {
+                    itemEventsListener.onShareClicked(ItemType.YOUTUBE_MEDIA_TYPE_VIDEO,
+                            searchResult.getId());
+                }
+            }
+        });
+
         return convertView;
+    }
+
+    public void setOnItemEventsListener(ItemEventsListener listener) {
+        itemEventsListener = listener;
     }
 
     @Override
