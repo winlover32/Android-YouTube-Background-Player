@@ -15,6 +15,7 @@
  */
 package com.smedic.tubtub;
 
+import android.Manifest;
 import android.app.SearchManager;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -24,6 +25,7 @@ import android.database.MatrixCursor;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.BaseColumns;
+import android.support.annotation.NonNull;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -37,6 +39,7 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -55,15 +58,20 @@ import com.smedic.tubtub.youtube.JsonAsyncTask;
 import java.util.ArrayList;
 import java.util.List;
 
+import pub.devrel.easypermissions.AfterPermissionGranted;
+import pub.devrel.easypermissions.EasyPermissions;
+
 /**
  * Activity that manages fragments and action bar
  */
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks {
 
     private static final String TAG = "SMEDIC MAIN ACTIVITY";
     private Toolbar toolbar;
     private TabLayout tabLayout;
     private ViewPager viewPager;
+
+    private final int PERMISSIONS = 1;
 
     private int initialColor = 0xffff0040;
     private int initialColors[] = new int[2];
@@ -104,6 +112,35 @@ public class MainActivity extends AppCompatActivity {
         setupTabIcons();
 
         loadColor();
+
+        requestPermissions();
+        /*if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.GET_ACCOUNTS)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.GET_ACCOUNTS},
+                    MY_PERMISSIONS_REQUEST_READ_CONTACTS);
+        }*/
+    }
+
+    @AfterPermissionGranted(PERMISSIONS)
+    private void requestPermissions() {
+        String[] perms = {Manifest.permission.GET_ACCOUNTS, Manifest.permission.READ_PHONE_STATE};
+        if (EasyPermissions.hasPermissions(this, perms)) {
+            // Already have permission, do the thing
+            Log.d(TAG, "requestPermissions: all permissions are there");
+        } else {
+            // Do not have permissions, request them now
+            EasyPermissions.requestPermissions(this, getString(R.string.all_permissions_request),
+                    PERMISSIONS, perms);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String permissions[], @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this);
     }
 
     /**
@@ -165,6 +202,16 @@ public class MainActivity extends AppCompatActivity {
         viewPager.setAdapter(adapter);
     }
 
+    @Override
+    public void onPermissionsGranted(int requestCode, List<String> perms) {
+        Log.d(TAG, "onPermissionsGranted:");
+    }
+
+    @Override
+    public void onPermissionsDenied(int requestCode, List<String> perms) {
+        Log.d(TAG, "onPermissionsDenied: ");
+    }
+
     /**
      * Class which provides adapter for fragment pager
      */
@@ -195,6 +242,7 @@ public class MainActivity extends AppCompatActivity {
         public CharSequence getPageTitle(int position) {
             return mFragmentTitleList.get(position);
         }
+
     }
 
     /**

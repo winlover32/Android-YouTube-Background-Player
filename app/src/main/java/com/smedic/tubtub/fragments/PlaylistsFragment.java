@@ -22,7 +22,6 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
-import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -39,6 +38,7 @@ import com.smedic.tubtub.adapters.PlaylistsAdapter;
 import com.smedic.tubtub.database.YouTubeSqlDb;
 import com.smedic.tubtub.interfaces.YouTubePlaylistsReceiver;
 import com.smedic.tubtub.interfaces.YouTubeVideosReceiver;
+import com.smedic.tubtub.model.ItemType;
 import com.smedic.tubtub.model.YouTubePlaylist;
 import com.smedic.tubtub.model.YouTubeVideo;
 import com.smedic.tubtub.utils.Config;
@@ -51,7 +51,7 @@ import java.util.ArrayList;
  * Class that handles list of the playlists acquired from YouTube
  * Created by smedic on 7.3.16..
  */
-public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver, YouTubePlaylistsReceiver {
+public class PlaylistsFragment extends BaseFragment implements YouTubeVideosReceiver, YouTubePlaylistsReceiver {
 
     private static final String TAG = "SMEDIC PlaylistsFrag";
 
@@ -93,13 +93,8 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_list, container, false);
-        TextView fragmentListTitle = (TextView) v.findViewById(R.id.fragment_title_text_view);
-        fragmentListTitle.setText(getString(R.string.playlists_tab));
-
         /* Setup the ListView */
         playlistsListView = (ListView) v.findViewById(R.id.fragment_list_items);
-        userNameTextView = (TextView) v.findViewById(R.id.user_name);
-        userNameTextView.setVisibility(View.VISIBLE);
         swipeToRefresh = (SwipeRefreshLayout) v.findViewById(R.id.swipe_to_refresh);
 
         setupListViewAndAdapter();
@@ -126,7 +121,6 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
 
         if (mChosenAccountName != null) {
             youTubeSearch.setAuthSelectedAccountName(mChosenAccountName);
-            userNameTextView.setText(extractUserName(mChosenAccountName));
             Toast.makeText(getContext(), "Hi " + extractUserName(mChosenAccountName), Toast.LENGTH_SHORT).show();
         }
     }
@@ -138,7 +132,7 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
         Log.d(TAG, "Saving account name... " + mChosenAccountName);
         SharedPreferences sp = PreferenceManager
                 .getDefaultSharedPreferences(getActivity());
-        sp.edit().putString(ACCOUNT_KEY, mChosenAccountName).commit();
+        sp.edit().putString(ACCOUNT_KEY, mChosenAccountName).apply();
     }
 
     @Override
@@ -217,6 +211,7 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
      */
     public void setupListViewAndAdapter() {
         playlistsAdapter = new PlaylistsAdapter(getActivity(), playlists);
+        playlistsAdapter.setOnItemEventsListener(this);
         playlistsListView.setAdapter(playlistsAdapter);
 
         swipeToRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
@@ -267,7 +262,7 @@ public class PlaylistsFragment extends Fragment implements YouTubeVideosReceiver
         } else {
             Intent serviceIntent = new Intent(getContext(), BackgroundAudioService.class);
             serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
-            serviceIntent.putExtra(Config.YOUTUBE_TYPE, Config.YOUTUBE_MEDIA_TYPE_PLAYLIST);
+            serviceIntent.putExtra(Config.YOUTUBE_TYPE, ItemType.YOUTUBE_MEDIA_TYPE_PLAYLIST);
             serviceIntent.putExtra(Config.YOUTUBE_TYPE_PLAYLIST, youTubeVideos);
             getActivity().startService(serviceIntent);
         }

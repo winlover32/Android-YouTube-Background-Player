@@ -36,6 +36,7 @@ import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.util.SparseArray;
 
+import com.smedic.tubtub.model.ItemType;
 import com.smedic.tubtub.model.YouTubeVideo;
 import com.smedic.tubtub.utils.Config;
 import com.squareup.picasso.Picasso;
@@ -67,7 +68,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
     private MediaSessionCompat mSession;
     private MediaControllerCompat mController;
 
-    private int mediaType = Config.YOUTUBE_MEDIA_NO_NEW_REQUEST;
+    private ItemType mediaType = ItemType.YOUTUBE_MEDIA_NONE;
 
     private YouTubeVideo videoItem;
 
@@ -155,20 +156,20 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
      * @param intent
      */
     private void handleMedia(Intent intent) {
-        int intentMediaType = intent.getIntExtra(Config.YOUTUBE_TYPE, Config.YOUTUBE_MEDIA_NO_NEW_REQUEST);
+        ItemType intentMediaType = (ItemType) intent.getSerializableExtra(Config.YOUTUBE_TYPE);
         switch (intentMediaType) {
-            case Config.YOUTUBE_MEDIA_NO_NEW_REQUEST: //video is paused,so no new playback requests should be processed
+            case YOUTUBE_MEDIA_NONE: //video is paused,so no new playback requests should be processed
                 mMediaPlayer.start();
                 break;
-            case Config.YOUTUBE_MEDIA_TYPE_VIDEO:
-                mediaType = Config.YOUTUBE_MEDIA_TYPE_VIDEO;
+            case YOUTUBE_MEDIA_TYPE_VIDEO:
+                mediaType = ItemType.YOUTUBE_MEDIA_TYPE_VIDEO;
                 videoItem = (YouTubeVideo) intent.getSerializableExtra(Config.YOUTUBE_TYPE_VIDEO);
                 if (videoItem.getId() != null) {
                     playVideo();
                 }
                 break;
-            case Config.YOUTUBE_MEDIA_TYPE_PLAYLIST: //new playlist playback request
-                mediaType = Config.YOUTUBE_MEDIA_TYPE_PLAYLIST;
+            case YOUTUBE_MEDIA_TYPE_PLAYLIST: //new playlist playback request
+                mediaType = ItemType.YOUTUBE_MEDIA_TYPE_PLAYLIST;
                 youTubeVideos = (ArrayList<YouTubeVideo>) intent.getSerializableExtra(Config.YOUTUBE_TYPE_PLAYLIST);
                 int startPosition = intent.getIntExtra(Config.YOUTUBE_TYPE_PLAYLIST_VIDEO_POS, 0);
                 iterator = youTubeVideos.listIterator(startPosition);
@@ -312,6 +313,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
      * Field which handles image loading
      */
     private Target target = new Target() {
+
         @Override
         public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom loadedFrom) {
             updateNotificationLargeIcon(bitmap);
@@ -358,7 +360,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
      */
     private void playNext() {
         //if media type is video not playlist, just loop it
-        if (mediaType == Config.YOUTUBE_MEDIA_TYPE_VIDEO) {
+        if (mediaType == ItemType.YOUTUBE_MEDIA_TYPE_VIDEO) {
             seekVideo(0);
             restartVideo();
             return;
@@ -383,7 +385,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
      */
     private void playPrevious() {
         //if media type is video not playlist, just loop it
-        if (mediaType == Config.YOUTUBE_MEDIA_TYPE_VIDEO) {
+        if (mediaType == ItemType.YOUTUBE_MEDIA_TYPE_VIDEO) {
             restartVideo();
             return;
         }
@@ -507,7 +509,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
 
     @Override
     public void onCompletion(MediaPlayer _mediaPlayer) {
-        if (mediaType == Config.YOUTUBE_MEDIA_TYPE_PLAYLIST) {
+        if (mediaType == ItemType.YOUTUBE_MEDIA_TYPE_PLAYLIST) {
             playNext();
             buildNotification(generateAction(android.R.drawable.ic_media_pause, "Pause", ACTION_PAUSE));
         } else {

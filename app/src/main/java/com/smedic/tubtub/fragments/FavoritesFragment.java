@@ -17,19 +17,18 @@ package com.smedic.tubtub.fragments;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.smedic.tubtub.BackgroundAudioService;
 import com.smedic.tubtub.R;
 import com.smedic.tubtub.adapters.VideosAdapter;
 import com.smedic.tubtub.database.YouTubeSqlDb;
+import com.smedic.tubtub.model.ItemType;
 import com.smedic.tubtub.model.YouTubeVideo;
 import com.smedic.tubtub.utils.Config;
 import com.smedic.tubtub.utils.NetworkConf;
@@ -39,7 +38,7 @@ import java.util.ArrayList;
 /**
  * Created by Stevan Medic on 21.3.16..
  */
-public class FavoritesFragment extends Fragment {
+public class FavoritesFragment extends BaseFragment {
     private static final String TAG = "SMEDIC Favorites";
     private ArrayList<YouTubeVideo> favoriteVideos;
 
@@ -64,10 +63,9 @@ public class FavoritesFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_list, container, false);
-        TextView fragmentListTitle = (TextView) v.findViewById(R.id.fragment_title_text_view);
-        fragmentListTitle.setText(getString(R.string.favorite_watched_tab));
         favoritesListView = (ListView) v.findViewById(R.id.fragment_list_items);
         videoListAdapter = new VideosAdapter(getActivity(), favoriteVideos, false);
+        videoListAdapter.setOnItemEventsListener(this);
         favoritesListView.setAdapter(videoListAdapter);
 
         //disable swipe to refresh for this tab
@@ -114,7 +112,7 @@ public class FavoritesFragment extends Fragment {
 
                     Intent serviceIntent = new Intent(getContext(), BackgroundAudioService.class);
                     serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
-                    serviceIntent.putExtra(Config.YOUTUBE_TYPE, Config.YOUTUBE_MEDIA_TYPE_PLAYLIST);
+                    serviceIntent.putExtra(Config.YOUTUBE_TYPE, ItemType.YOUTUBE_MEDIA_TYPE_PLAYLIST);
                     serviceIntent.putExtra(Config.YOUTUBE_TYPE_PLAYLIST, favoriteVideos);
                     serviceIntent.putExtra(Config.YOUTUBE_TYPE_PLAYLIST_VIDEO_POS, pos);
                     getActivity().startService(serviceIntent);
