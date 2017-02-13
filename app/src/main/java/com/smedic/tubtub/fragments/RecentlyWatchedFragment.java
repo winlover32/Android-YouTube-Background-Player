@@ -22,7 +22,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.smedic.tubtub.BackgroundAudioService;
@@ -67,8 +66,6 @@ public class RecentlyWatchedFragment extends BaseFragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_list, container, false);
-        TextView fragmentListTitle = (TextView) v.findViewById(R.id.fragment_title_text_view);
-        fragmentListTitle.setText(getString(R.string.recently_watched_tab));
         recentlyPlayedListView = (ListView) v.findViewById(R.id.fragment_list_items);
         videoListAdapter = new VideosAdapter(getActivity(), recentlyPlayedVideos, false);
         videoListAdapter.setOnItemEventsListener(this);

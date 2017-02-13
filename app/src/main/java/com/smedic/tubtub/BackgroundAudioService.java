@@ -451,6 +451,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
     private void stopPlayer() {
         mMediaPlayer.stop();
         mMediaPlayer.release();
+        mMediaPlayer = null;
     }
 
     /**

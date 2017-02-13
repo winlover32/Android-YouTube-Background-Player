@@ -93,13 +93,8 @@ public class PlaylistsFragment extends BaseFragment implements YouTubeVideosRece
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_list, container, false);
-        TextView fragmentListTitle = (TextView) v.findViewById(R.id.fragment_title_text_view);
-        fragmentListTitle.setText(getString(R.string.playlists_tab));
-
         /* Setup the ListView */
         playlistsListView = (ListView) v.findViewById(R.id.fragment_list_items);
-        userNameTextView = (TextView) v.findViewById(R.id.user_name);
-        userNameTextView.setVisibility(View.VISIBLE);
         swipeToRefresh = (SwipeRefreshLayout) v.findViewById(R.id.swipe_to_refresh);
 
         setupListViewAndAdapter();
@@ -126,7 +121,6 @@ public class PlaylistsFragment extends BaseFragment implements YouTubeVideosRece
 
         if (mChosenAccountName != null) {
             youTubeSearch.setAuthSelectedAccountName(mChosenAccountName);
-            userNameTextView.setText(extractUserName(mChosenAccountName));
             Toast.makeText(getContext(), "Hi " + extractUserName(mChosenAccountName), Toast.LENGTH_SHORT).show();
         }
     }

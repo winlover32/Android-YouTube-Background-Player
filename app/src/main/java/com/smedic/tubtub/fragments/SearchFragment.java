@@ -25,7 +25,6 @@ import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.ProgressBar;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.smedic.tubtub.BackgroundAudioService;
@@ -80,8 +79,6 @@ public class SearchFragment extends BaseFragment implements YouTubeVideosReceive
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_list, container, false);
-        TextView fragmentListTitle = (TextView) v.findViewById(R.id.fragment_title_text_view);
-        fragmentListTitle.setText(getString(R.string.search_tab));
         videosFoundListView = (ListView) v.findViewById(R.id.fragment_list_items);
         loadingProgressBar = (ProgressBar) v.findViewById(R.id.fragment_progress_bar);
         videoListAdapter = new VideosAdapter(getActivity(), searchResultsList, false);
