@@ -17,6 +17,7 @@ package com.smedic.tubtub;
 
 import android.Manifest;
 import android.accounts.AccountManager;
+import android.annotation.TargetApi;
 import android.app.Dialog;
 import android.app.SearchManager;
 import android.content.Context;
@@ -24,6 +25,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.MatrixCursor;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.BaseColumns;
@@ -46,6 +48,8 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Toast;
 
 import com.flask.colorpicker.ColorPickerView;
@@ -253,7 +257,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     protected void onActivityResult(
             int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        switch(requestCode) {
+        switch (requestCode) {
             case REQUEST_GOOGLE_PLAY_SERVICES:
                 if (resultCode != RESULT_OK) {
                     Toast.makeText(this,
@@ -652,12 +656,22 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         TabLayout tabs = (TabLayout) findViewById(R.id.tabs);
         tabs.setBackgroundColor(backgroundColor);
         tabs.setTabTextColors(textColor, textColor);
-        SharedPreferences sp = PreferenceManager
-                .getDefaultSharedPreferences(this);
+        setStatusBarColor(backgroundColor);
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         sp.edit().putInt(PREF_BACKGROUND_COLOR, backgroundColor).apply();
         sp.edit().putInt(PREF_TEXT_COLOR, textColor).apply();
 
         initialColors[0] = backgroundColor;
         initialColors[1] = textColor;
+    }
+
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    public void setStatusBarColor(int color) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            Window window = getWindow();
+            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            window.setStatusBarColor(color);
+        }
     }
 }

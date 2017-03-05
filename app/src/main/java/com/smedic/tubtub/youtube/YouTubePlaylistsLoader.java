@@ -19,7 +19,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import static com.smedic.tubtub.youtube.YouTubeSingleton.getYouTube;
+import static com.smedic.tubtub.youtube.YouTubeSingleton.getCredential;
+import static com.smedic.tubtub.youtube.YouTubeSingleton.getYouTubeWithCredentials;
 
 /**
  * Created by smedic on 13.2.17..
@@ -28,7 +29,7 @@ import static com.smedic.tubtub.youtube.YouTubeSingleton.getYouTube;
 public class YouTubePlaylistsLoader extends AsyncTaskLoader<List<YouTubePlaylist>> {
 
     private static final String TAG = "SMEDIC";
-    private YouTube youtube = getYouTube();
+    private YouTube youtube = getYouTubeWithCredentials();
 
     public YouTubePlaylistsLoader(Context context) {
         super(context);
@@ -36,6 +37,11 @@ public class YouTubePlaylistsLoader extends AsyncTaskLoader<List<YouTubePlaylist
 
     @Override
     public List<YouTubePlaylist> loadInBackground() {
+
+        if (getCredential().getSelectedAccountName() == null) {
+            Log.d(TAG, "loadInBackground: account not picked!");
+            return Collections.emptyList();
+        }
 
         try {
             ChannelListResponse channelListResponse = youtube.channels().list("snippet").setMine(true).execute();

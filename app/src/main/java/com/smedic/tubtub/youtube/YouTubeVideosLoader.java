@@ -19,7 +19,7 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.smedic.tubtub.youtube.YouTubeSingleton.getInstance;
+import static com.smedic.tubtub.youtube.YouTubeSingleton.getYouTube;
 
 /**
  * Created by smedic on 13.2.17..
@@ -27,7 +27,7 @@ import static com.smedic.tubtub.youtube.YouTubeSingleton.getInstance;
 
 public class YouTubeVideosLoader extends AsyncTaskLoader<List<YouTubeVideo>> {
 
-    private YouTube youtube = getInstance().getYouTube();
+    private YouTube youtube = getYouTube();
     private String keywords;
 
     public YouTubeVideosLoader(Context context, String keywords) {
