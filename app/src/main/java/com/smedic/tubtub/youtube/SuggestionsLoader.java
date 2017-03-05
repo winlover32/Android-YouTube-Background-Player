@@ -1,21 +1,7 @@
-/*
- * Copyright (C) 2016 SMedic
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.smedic.tubtub.youtube;
 
-import android.os.AsyncTask;
+import android.content.Context;
+import android.support.v4.content.AsyncTaskLoader;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -30,43 +16,42 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.List;
+
+import static com.smedic.tubtub.utils.Config.SUGGESTIONS_URL;
 
 /**
- * AsyncTask for acquiring search suggestion in action bar
- * Created by Stevan Medic on 19.2.16..
+ * Created by smedic on 13.2.17..
  */
-public class JsonAsyncTask extends AsyncTask<String, Void, ArrayList<String>> {
+
+public class SuggestionsLoader extends AsyncTaskLoader<List<String>> {
+
     private static final String TAG = "SMEDIC JsonAsyncTask";
 
     private static final int JSON_ERROR = 0;
     private static final int JSON_ARRAY = 1;
     private static final int JSON_OBJECT = 2;
+    private final String suggestion;
 
-    // you may separate this or combined to caller class.
-    public interface OnSuggestionsLoadedListener {
-        void OnSuggestionsLoaded(ArrayList<String> result);
-    }
-
-    public OnSuggestionsLoadedListener listener = null;
-
-    public JsonAsyncTask(OnSuggestionsLoadedListener listener) {
-        this.listener = listener;
+    public SuggestionsLoader(Context context, String suggestion) {
+        super(context);
+        this.suggestion = suggestion;
     }
 
     @Override
-    protected ArrayList<String> doInBackground(String... params) {
+    public List<String> loadInBackground() {
 
         //encode param to avoid spaces in URL
         String encodedParam = "";
         try {
-            encodedParam = URLEncoder.encode(params[0], "UTF-8").replace("+", "%20");
+            encodedParam = URLEncoder.encode(suggestion, "UTF-8").replace("+", "%20");
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
 
         ArrayList<String> items = new ArrayList<>();
         try {
-            URL url = new URL("http://suggestqueries.google.com/complete/search?client=youtube&ds=yt&q=" + encodedParam);
+            URL url = new URL(SUGGESTIONS_URL + encodedParam);
             HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
             urlConnection.setRequestMethod("GET");
             urlConnection.connect();
@@ -83,14 +68,10 @@ public class JsonAsyncTask extends AsyncTask<String, Void, ArrayList<String>> {
                 }
 
                 JSONArray ja = new JSONArray(next);
-
                 for (int i = 0; i < ja.length(); i++) {
-
                     if (ja.get(i) instanceof JSONArray) {
                         JSONArray ja2 = ja.getJSONArray(i);
-
                         for (int j = 0; j < ja2.length(); j++) {
-
                             if (ja2.get(j) instanceof JSONArray) {
                                 String suggestion = ((JSONArray) ja2.get(j)).getString(0);
                                 //Log.d(TAG, "Suggestion: " + suggestion);
@@ -111,15 +92,14 @@ public class JsonAsyncTask extends AsyncTask<String, Void, ArrayList<String>> {
     }
 
     @Override
-    protected void onPostExecute(ArrayList<String> result) {
-        listener.OnSuggestionsLoaded(result);
+    public void deliverResult(List<String> data) {
+        if (isReset()) {
+            // The Loader has been reset; ignore the result and invalidate the data.
+            return;
+        }
+        super.deliverResult(data);
     }
 
-    /**
-     * Checks if JSON data is correctly formatted
-     * @param string
-     * @return
-     */
     private int checkJson(String string) {
         try {
             Object json = new JSONTokener(string).nextValue();
@@ -136,4 +116,3 @@ public class JsonAsyncTask extends AsyncTask<String, Void, ArrayList<String>> {
         }
     }
 }
-

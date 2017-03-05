@@ -30,7 +30,9 @@ import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.app.LoaderManager;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.Loader;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.CursorAdapter;
@@ -42,6 +44,7 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 import com.flask.colorpicker.ColorPickerView;
 import com.flask.colorpicker.OnColorSelectedListener;
@@ -52,19 +55,27 @@ import com.smedic.tubtub.fragments.FavoritesFragment;
 import com.smedic.tubtub.fragments.PlaylistsFragment;
 import com.smedic.tubtub.fragments.RecentlyWatchedFragment;
 import com.smedic.tubtub.fragments.SearchFragment;
+import com.smedic.tubtub.interfaces.OnItemSelected;
+import com.smedic.tubtub.model.ItemType;
+import com.smedic.tubtub.model.YouTubeVideo;
+import com.smedic.tubtub.utils.Config;
 import com.smedic.tubtub.utils.NetworkConf;
-import com.smedic.tubtub.youtube.JsonAsyncTask;
+import com.smedic.tubtub.youtube.SuggestionsLoader;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
+import static com.smedic.tubtub.R.layout.suggestions;
+
 /**
  * Activity that manages fragments and action bar
  */
-public class MainActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks {
+public class MainActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks,
+        OnItemSelected {
 
     private static final String TAG = "SMEDIC MAIN ACTIVITY";
     private Toolbar toolbar;
@@ -114,13 +125,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         loadColor();
 
         requestPermissions();
-        /*if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.GET_ACCOUNTS)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.GET_ACCOUNTS},
-                    MY_PERMISSIONS_REQUEST_READ_CONTACTS);
-        }*/
+
     }
 
     @AfterPermissionGranted(PERMISSIONS)
@@ -193,12 +198,15 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
         ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
 
-        searchFragment = new SearchFragment();
-        recentlyPlayedFragment = new RecentlyWatchedFragment();
-        adapter.addFragment(new FavoritesFragment(), null);
+        searchFragment = SearchFragment.newInstance();
+        recentlyPlayedFragment = RecentlyWatchedFragment.newInstance();
+        FavoritesFragment favoritesFragment = FavoritesFragment.newInstance();
+        PlaylistsFragment playlistsFragment = PlaylistsFragment.newInstance();
+
+        adapter.addFragment(favoritesFragment, null);
         adapter.addFragment(recentlyPlayedFragment, null);
         adapter.addFragment(searchFragment, null);
-        adapter.addFragment(new PlaylistsFragment(), null);
+        adapter.addFragment(playlistsFragment, null);
         viewPager.setAdapter(adapter);
     }
 
@@ -210,6 +218,40 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     @Override
     public void onPermissionsDenied(int requestCode, List<String> perms) {
         Log.d(TAG, "onPermissionsDenied: ");
+    }
+
+    @Override
+    public void onVideoSelected(YouTubeVideo video) {
+        if (!networkConf.isNetworkAvailable()) {
+            networkConf.createNetErrorDialog();
+            return;
+        }
+
+        Toast.makeText(this, "Video started: " + video.getTitle(), Toast.LENGTH_SHORT).show();
+
+        Intent serviceIntent = new Intent(this, BackgroundAudioService.class);
+        serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
+        serviceIntent.putExtra(Config.YOUTUBE_TYPE, ItemType.YOUTUBE_MEDIA_TYPE_VIDEO);
+        serviceIntent.putExtra(Config.YOUTUBE_TYPE_VIDEO, video);
+        startService(serviceIntent);
+    }
+
+    @Override
+    public void onPlaylistSelected(List<YouTubeVideo> playlist, int position) {
+        if (!networkConf.isNetworkAvailable()) {
+            networkConf.createNetErrorDialog();
+            return;
+        }
+
+        Toast.makeText(this, "Playlist started: " + playlist.get(position).getTitle(),
+                Toast.LENGTH_SHORT).show();
+
+        Intent serviceIntent = new Intent(this, BackgroundAudioService.class);
+        serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
+        serviceIntent.putExtra(Config.YOUTUBE_TYPE, ItemType.YOUTUBE_MEDIA_TYPE_PLAYLIST);
+        serviceIntent.putExtra(Config.YOUTUBE_TYPE_PLAYLIST, (ArrayList) playlist);
+        serviceIntent.putExtra(Config.YOUTUBE_TYPE_PLAYLIST_VIDEO_POS, position);
+        startService(serviceIntent);
     }
 
     /**
@@ -266,7 +308,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
         //suggestions
         final CursorAdapter suggestionAdapter = new SimpleCursorAdapter(this,
-                R.layout.suggestions,
+                suggestions,
                 null,
                 new String[]{SearchManager.SUGGEST_COLUMN_TEXT_1},
                 new int[]{android.R.id.text1},
@@ -301,32 +343,43 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             }
 
             @Override
-            public boolean onQueryTextChange(String suggestion) {
+            public boolean onQueryTextChange(final String query) {
                 // check network connection. If not available, do not query.
                 // this also disables onSuggestionClick triggering
-                if (suggestion.length() > 2) { //make suggestions after 3rd letter
-
+                if (query.length() > 2) { //make suggestions after 3rd letter
                     if (networkConf.isNetworkAvailable()) {
 
-                        new JsonAsyncTask(new JsonAsyncTask.OnSuggestionsLoadedListener() {
+                        getSupportLoaderManager().restartLoader(4, null, new LoaderManager.LoaderCallbacks<List<String>>() {
                             @Override
-                            public void OnSuggestionsLoaded(ArrayList<String> result) {
+                            public Loader<List<String>> onCreateLoader(final int id, final Bundle args) {
+                                return new SuggestionsLoader(getApplicationContext(), query);
+                            }
+
+                            @Override
+                            public void onLoadFinished(Loader<List<String>> loader, List<String> data) {
+                                if (data == null)
+                                    return;
                                 suggestions.clear();
-                                suggestions.addAll(result);
+                                suggestions.addAll(data);
                                 String[] columns = {
                                         BaseColumns._ID,
                                         SearchManager.SUGGEST_COLUMN_TEXT_1
                                 };
                                 MatrixCursor cursor = new MatrixCursor(columns);
 
-                                for (int i = 0; i < result.size(); i++) {
-                                    String[] tmp = {Integer.toString(i), result.get(i)};
+                                for (int i = 0; i < data.size(); i++) {
+                                    String[] tmp = {Integer.toString(i), data.get(i)};
                                     cursor.addRow(tmp);
                                 }
                                 suggestionAdapter.swapCursor(cursor);
-
                             }
-                        }).execute(suggestion);
+
+                            @Override
+                            public void onLoaderReset(Loader<List<String>> loader) {
+                                suggestions.clear();
+                                suggestions.addAll(Collections.<String>emptyList());
+                            }
+                        }).forceLoad();
                         return true;
                     }
                 }
@@ -444,8 +497,8 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         tabs.setTabTextColors(textColor, textColor);
         SharedPreferences sp = PreferenceManager
                 .getDefaultSharedPreferences(this);
-        sp.edit().putInt("BACKGROUND_COLOR", backgroundColor).commit();
-        sp.edit().putInt("TEXT_COLOR", textColor).commit();
+        sp.edit().putInt("BACKGROUND_COLOR", backgroundColor).apply();
+        sp.edit().putInt("TEXT_COLOR", textColor).apply();
 
         initialColors[0] = backgroundColor;
         initialColors[1] = textColor;
