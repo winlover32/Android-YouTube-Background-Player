@@ -15,14 +15,9 @@
  */
 package com.smedic.tubtub.fragments;
 
-import android.accounts.AccountManager;
-import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
-import android.preference.PreferenceManager;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -32,7 +27,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
-import android.widget.Toast;
 
 import com.smedic.tubtub.MainActivity;
 import com.smedic.tubtub.R;
@@ -63,7 +57,6 @@ public class PlaylistsFragment extends BaseFragment {
     private PlaylistsAdapter playlistsAdapter;
 
     public static final String ACCOUNT_KEY = "accountName";
-    private String mChosenAccountName;
 
     private static final int REQUEST_ACCOUNT_PICKER = 2;
     private static final int REQUEST_AUTHORIZATION = 3;
@@ -99,40 +92,7 @@ public class PlaylistsFragment extends BaseFragment {
         swipeToRefresh = (SwipeRefreshLayout) v.findViewById(R.id.swipe_to_refresh);
 
         setupListViewAndAdapter();
-
-        if (savedInstanceState != null) {
-            mChosenAccountName = savedInstanceState.getString(ACCOUNT_KEY);
-            //youTubeSearch.setAuthSelectedAccountName(mChosenAccountName); // TODO: 5.3.17.
-            Toast.makeText(getContext(), "Hi " + extractUserName(mChosenAccountName), Toast.LENGTH_SHORT).show();
-        } else {
-            loadAccount();
-        }
-
         return v;
-    }
-
-    /**
-     * Loads account saved in preferences
-     */
-    private void loadAccount() {
-        SharedPreferences sp = PreferenceManager
-                .getDefaultSharedPreferences(getActivity());
-        mChosenAccountName = sp.getString(ACCOUNT_KEY, null);
-
-        if (mChosenAccountName != null) {
-            //youTubeSearch.setAuthSelectedAccountName(mChosenAccountName); // TODO: 5.3.17.
-            Toast.makeText(getContext(), "Hi " + extractUserName(mChosenAccountName), Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    /**
-     * Save account in preferences for future usages
-     */
-    private void saveAccount() {
-        Log.d(TAG, "Saving account name... " + mChosenAccountName);
-        SharedPreferences sp = PreferenceManager
-                .getDefaultSharedPreferences(getActivity());
-        sp.edit().putString(ACCOUNT_KEY, mChosenAccountName).apply();
     }
 
     @Override
@@ -159,40 +119,6 @@ public class PlaylistsFragment extends BaseFragment {
         playlistsAdapter.notifyDataSetChanged();
     }
 
-    /**
-     * Handles Google OAuth 2.0 authorization or account chosen result
-     *
-     * @param requestCode
-     * @param resultCode
-     * @param data
-     */
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        switch (requestCode) {
-            case REQUEST_AUTHORIZATION:
-                if (resultCode != Activity.RESULT_OK) {
-                    chooseAccount();
-                }
-                break;
-            case REQUEST_ACCOUNT_PICKER:
-                if (resultCode == Activity.RESULT_OK && data != null
-                        && data.getExtras() != null) {
-                    String accountName = data.getExtras().getString(
-                            AccountManager.KEY_ACCOUNT_NAME);
-                    if (accountName != null) {
-                        mChosenAccountName = accountName;
-                        //youTubeSearch.setAuthSelectedAccountName(accountName); // TODO: 5.3.17.
-                        Toast.makeText(getContext(), "Hi " + extractUserName(mChosenAccountName), Toast.LENGTH_SHORT).show();
-                        saveAccount();
-                    }
-                    searchPlaylists();
-                }
-                break;
-        }
-    }
-
     public void searchPlaylists() {
         getLoaderManager().restartLoader(2, null, new LoaderManager.LoaderCallbacks<List<YouTubePlaylist>>() {
             @Override
@@ -202,8 +128,11 @@ public class PlaylistsFragment extends BaseFragment {
 
             @Override
             public void onLoadFinished(Loader<List<YouTubePlaylist>> loader, List<YouTubePlaylist> data) {
-                if (data == null)
+                Log.d(TAG, "onLoadFinished: ");
+                if (data == null) {
+                    swipeToRefresh.setRefreshing(false);
                     return;
+                }
                 YouTubeSqlDb.getInstance().playlists().deleteAll();
                 for (YouTubePlaylist playlist : data) {
                     YouTubeSqlDb.getInstance().playlists().create(playlist);
@@ -211,14 +140,13 @@ public class PlaylistsFragment extends BaseFragment {
 
                 playlists.clear();
                 playlists.addAll(data);
-                handler.post(new Runnable() {
-                    public void run() {
-                        if (playlistsAdapter != null) {
-                            playlistsAdapter.notifyDataSetChanged();
-                            swipeToRefresh.setRefreshing(false);
-                        }
-                    }
-                });
+                playlistsAdapter.notifyDataSetChanged();
+                swipeToRefresh.setRefreshing(false);
+
+                for (YouTubePlaylist playlist : playlists) {
+                    Log.d(TAG, "onLoadFinished: >>> " + playlist.getTitle());
+                }
+
             }
 
             @Override
@@ -227,15 +155,6 @@ public class PlaylistsFragment extends BaseFragment {
                 playlists.addAll(Collections.<YouTubePlaylist>emptyList());
             }
         }).forceLoad();
-    }
-
-    /**
-     * Choose Google account if OAuth 2.0 choosing is necessary
-     * acquiring YouTube private playlists requires OAuth 2.0 authorization
-     */
-    private void chooseAccount() {
-        /*startActivityForResult(youTubeSearch.getCredential().newChooseAccountIntent(),
-                REQUEST_ACCOUNT_PICKER);*/ // TODO: 5.3.17.
     }
 
     /**
@@ -250,11 +169,7 @@ public class PlaylistsFragment extends BaseFragment {
             @Override
             public void onRefresh() {
                 if (networkConf.isNetworkAvailable()) {
-                    if (mChosenAccountName == null) {
-                        chooseAccount();
-                    } else {
-                        searchPlaylists();
-                    }
+                    searchPlaylists();
                 } else {
                     networkConf.createNetErrorDialog();
                 }

@@ -41,11 +41,9 @@ public class PlaylistsAdapter extends ArrayAdapter<YouTubePlaylist> {
     @Override
     public View getView(final int position, View convertView, ViewGroup parent) {
 
-        if (holder == null) {
-            holder = new ViewHolder();
-        }
-
+        ViewHolder holder;
         if (convertView == null) {
+            holder = new ViewHolder();
             LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             convertView = inflater.inflate(R.layout.playlist_item, parent, false);
             holder.thumbnail = (ImageView) convertView.findViewById(R.id.video_thumbnail);
@@ -53,6 +51,9 @@ public class PlaylistsAdapter extends ArrayAdapter<YouTubePlaylist> {
             holder.videosNumber = (TextView) convertView.findViewById(R.id.videos_number);
             holder.privacy = (TextView) convertView.findViewById(privacy);
             holder.shareButton = (ImageView) convertView.findViewById(R.id.share_button);
+            convertView.setTag(holder);
+        } else {
+            holder = (ViewHolder) convertView.getTag();
         }
 
         final YouTubePlaylist searchResult = playlists.get(position);
@@ -87,16 +88,5 @@ public class PlaylistsAdapter extends ArrayAdapter<YouTubePlaylist> {
 
     public void setOnItemEventsListener(ItemEventsListener listener) {
         itemEventsListener = listener;
-    }
-
-    @Override
-    public long getItemId(int i) {
-        return getItem(i).hashCode();
-    }
-
-
-    @Override
-    public boolean hasStableIds() {
-        return true;
     }
 }

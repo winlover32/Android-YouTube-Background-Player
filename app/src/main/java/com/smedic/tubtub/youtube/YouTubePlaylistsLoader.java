@@ -19,7 +19,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import static com.smedic.tubtub.youtube.YouTubeSingleton.getInstance;
+import static com.smedic.tubtub.youtube.YouTubeSingleton.getYouTube;
 
 /**
  * Created by smedic on 13.2.17..
@@ -28,7 +28,7 @@ import static com.smedic.tubtub.youtube.YouTubeSingleton.getInstance;
 public class YouTubePlaylistsLoader extends AsyncTaskLoader<List<YouTubePlaylist>> {
 
     private static final String TAG = "SMEDIC";
-    private YouTube youtube = getInstance().getYouTube();
+    private YouTube youtube = getYouTube();
 
     public YouTubePlaylistsLoader(Context context) {
         super(context);
@@ -36,9 +36,6 @@ public class YouTubePlaylistsLoader extends AsyncTaskLoader<List<YouTubePlaylist
 
     @Override
     public List<YouTubePlaylist> loadInBackground() {
-
-        //Log.d(TAG, "Chosen name: " + mChosenAccountName);
-        //credential.setSelectedAccountName(mChosenAccountName);
 
         try {
             ChannelListResponse channelListResponse = youtube.channels().list("snippet").setMine(true).execute();
@@ -61,7 +58,6 @@ public class YouTubePlaylistsLoader extends AsyncTaskLoader<List<YouTubePlaylist
             if (playlists != null) {
 
                 Iterator<Playlist> iteratorPlaylistResults = playlists.iterator();
-
                 if (!iteratorPlaylistResults.hasNext()) {
                     Log.d(TAG, " There aren't any results for your query.");
                 }
@@ -82,12 +78,14 @@ public class YouTubePlaylistsLoader extends AsyncTaskLoader<List<YouTubePlaylist
                 return youTubePlaylistList;
             }
         } catch (UserRecoverableAuthIOException e) {
-            //playlistFragment.startActivityForResult(e.getIntent(), REQUEST_AUTHORIZATION); // TODO: 5.3.17.  
             Log.d(TAG, "loadInBackground: exception REQUEST_AUTHORIZATION");
+            cancelLoad();
+            e.printStackTrace();
         } catch (IOException e) {
+            Log.d(TAG, "loadInBackground: " + e.getMessage());
+            cancelLoad();
             e.printStackTrace();
         }
-
         return Collections.emptyList();
     }
 
@@ -100,4 +98,9 @@ public class YouTubePlaylistsLoader extends AsyncTaskLoader<List<YouTubePlaylist
         super.deliverResult(data);
     }
 
+    @Override
+    public void onCanceled(List<YouTubePlaylist> data) {
+        super.onCanceled(data);
+        Log.d(TAG, "onCanceled: ");
+    }
 }
