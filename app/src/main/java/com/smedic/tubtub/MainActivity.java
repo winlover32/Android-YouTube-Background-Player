@@ -55,6 +55,7 @@ import com.smedic.tubtub.fragments.FavoritesFragment;
 import com.smedic.tubtub.fragments.PlaylistsFragment;
 import com.smedic.tubtub.fragments.RecentlyWatchedFragment;
 import com.smedic.tubtub.fragments.SearchFragment;
+import com.smedic.tubtub.interfaces.OnFavoritesSelected;
 import com.smedic.tubtub.interfaces.OnItemSelected;
 import com.smedic.tubtub.model.ItemType;
 import com.smedic.tubtub.model.YouTubeVideo;
@@ -75,20 +76,23 @@ import static com.smedic.tubtub.R.layout.suggestions;
  * Activity that manages fragments and action bar
  */
 public class MainActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks,
-        OnItemSelected {
+        OnItemSelected, OnFavoritesSelected {
 
     private static final String TAG = "SMEDIC MAIN ACTIVITY";
     private Toolbar toolbar;
     private TabLayout tabLayout;
     private ViewPager viewPager;
 
-    private final int PERMISSIONS = 1;
+    private static final int PERMISSIONS = 1;
+    private static final String PREF_BACKGROUND_COLOR = "BACKGROUND_COLOR";
+    private static final String PREF_TEXT_COLOR = "TEXT_COLOR";
 
     private int initialColor = 0xffff0040;
     private int initialColors[] = new int[2];
 
     private SearchFragment searchFragment;
     private RecentlyWatchedFragment recentlyPlayedFragment;
+    private FavoritesFragment favoritesFragment;
 
     private int[] tabIcons = {
             R.drawable.ic_action_heart,
@@ -200,7 +204,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
         searchFragment = SearchFragment.newInstance();
         recentlyPlayedFragment = RecentlyWatchedFragment.newInstance();
-        FavoritesFragment favoritesFragment = FavoritesFragment.newInstance();
+        favoritesFragment = FavoritesFragment.newInstance();
         PlaylistsFragment playlistsFragment = PlaylistsFragment.newInstance();
 
         adapter.addFragment(favoritesFragment, null);
@@ -252,6 +256,17 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         serviceIntent.putExtra(Config.YOUTUBE_TYPE_PLAYLIST, (ArrayList) playlist);
         serviceIntent.putExtra(Config.YOUTUBE_TYPE_PLAYLIST_VIDEO_POS, position);
         startService(serviceIntent);
+    }
+
+    @Override
+    public void onFavoritesSelected(YouTubeVideo video, boolean isChecked) {
+        if (isChecked) {
+            Log.d(TAG, "onFavoritesSelected: 1");
+            favoritesFragment.addToFavoritesList(video);
+        } else {
+            Log.d(TAG, "onFavoritesSelected: 2");
+            favoritesFragment.removeFromFavorites(video);
+        }
     }
 
     /**
@@ -413,7 +428,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             alertDialog.setMessage(getString(R.string.app_name) + " " + BuildConfig.VERSION_NAME + "\n\n" +
                     getString(R.string.email) + "\n\n" +
                     getString(R.string.date) + "\n");
-            alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
+            alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, getString(R.string.ok),
                     new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int which) {
                             dialog.dismiss();
@@ -433,7 +448,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             /* Show color picker dialog */
             ColorPickerDialogBuilder
                     .with(this)
-                    .setTitle("Choose background and text color")
+                    .setTitle(getString(R.string.choose_colors))
                     .initialColor(initialColor)
                     .wheelType(ColorPickerView.WHEEL_TYPE.FLOWER)
                     .setPickerCount(2)
@@ -444,7 +459,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                         public void onColorSelected(int selectedColor) {
                         }
                     })
-                    .setPositiveButton("ok", new ColorPickerClickListener() {
+                    .setPositiveButton(getString(R.string.ok), new ColorPickerClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int selectedColor, Integer[] allColors) {
                             //changeBackgroundColor(selectedColor);
@@ -453,7 +468,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                             }
                         }
                     })
-                    .setNegativeButton("cancel", new DialogInterface.OnClickListener() {
+                    .setNegativeButton(getString(R.string.cancel), new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                         }
@@ -470,10 +485,9 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
      * Loads app theme color saved in preferences
      */
     private void loadColor() {
-        SharedPreferences sp = PreferenceManager
-                .getDefaultSharedPreferences(this);
-        int backgroundColor = sp.getInt("BACKGROUND_COLOR", -1);
-        int textColor = sp.getInt("TEXT_COLOR", -1);
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        int backgroundColor = sp.getInt(PREF_BACKGROUND_COLOR, -1);
+        int textColor = sp.getInt(PREF_TEXT_COLOR, -1);
 
         if (backgroundColor != -1 && textColor != -1) {
             setColors(backgroundColor, textColor);
@@ -497,8 +511,8 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         tabs.setTabTextColors(textColor, textColor);
         SharedPreferences sp = PreferenceManager
                 .getDefaultSharedPreferences(this);
-        sp.edit().putInt("BACKGROUND_COLOR", backgroundColor).apply();
-        sp.edit().putInt("TEXT_COLOR", textColor).apply();
+        sp.edit().putInt(PREF_BACKGROUND_COLOR, backgroundColor).apply();
+        sp.edit().putInt(PREF_TEXT_COLOR, textColor).apply();
 
         initialColors[0] = backgroundColor;
         initialColors[1] = textColor;

@@ -70,7 +70,7 @@ public class FavoritesFragment extends BaseFragment implements AdapterView.OnIte
         View v = inflater.inflate(R.layout.fragment_list, container, false);
         favoritesListView = (ListView) v.findViewById(R.id.fragment_list_items);
         favoritesListView.setOnItemClickListener(this);
-        videoListAdapter = new VideosAdapter(getActivity(), favoriteVideos, false);
+        videoListAdapter = new VideosAdapter(getActivity(), favoriteVideos);
         videoListAdapter.setOnItemEventsListener(this);
         favoritesListView.setAdapter(videoListAdapter);
 
@@ -88,23 +88,11 @@ public class FavoritesFragment extends BaseFragment implements AdapterView.OnIte
     }
 
     @Override
-    public void setUserVisibleHint(boolean visible) {
-        super.setUserVisibleHint(visible);
-
-        if (visible && isResumed()) {
-            //Log.d(TAG, "RecentlyWatchedFragment visible and resumed");
-            //Only manually call onResume if fragment is already visible
-            //Otherwise allow natural fragment lifecycle to call onResume
-            onResume();
-        }
-    }
-
-    @Override
     public void onAttach(Context context) {
         super.onAttach(context);
         if (context instanceof MainActivity) {
             this.context = context;
-            itemSelected = (MainActivity) context;
+            this.itemSelected = (MainActivity) context;
         }
     }
 
@@ -112,6 +100,7 @@ public class FavoritesFragment extends BaseFragment implements AdapterView.OnIte
     public void onDetach() {
         super.onDetach();
         this.context = null;
+        this.itemSelected = null;
     }
 
     /**
@@ -119,6 +108,16 @@ public class FavoritesFragment extends BaseFragment implements AdapterView.OnIte
      */
     public void clearFavoritesList() {
         favoriteVideos.clear();
+        videoListAdapter.notifyDataSetChanged();
+    }
+
+    public void addToFavoritesList(YouTubeVideo video) {
+        YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.FAVORITE).create(video);
+    }
+
+    public void removeFromFavorites(YouTubeVideo video) {
+        YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.FAVORITE).delete(video.getId());
+        favoriteVideos.remove(video);
         videoListAdapter.notifyDataSetChanged();
     }
 
@@ -130,5 +129,15 @@ public class FavoritesFragment extends BaseFragment implements AdapterView.OnIte
         YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.RECENTLY_WATCHED)
                 .create(favoriteVideos.get(pos));
         itemSelected.onPlaylistSelected(favoriteVideos, pos);
+    }
+
+    @Override
+    public void onFavoriteClicked(YouTubeVideo video, boolean isChecked) {
+        super.onFavoriteClicked(video, isChecked);
+        if (isChecked) {
+            addToFavoritesList(video);
+        } else {
+            removeFromFavorites(video);
+        }
     }
 }

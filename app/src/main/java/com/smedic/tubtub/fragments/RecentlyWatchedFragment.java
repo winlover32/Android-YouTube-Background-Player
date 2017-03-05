@@ -27,6 +27,7 @@ import com.smedic.tubtub.MainActivity;
 import com.smedic.tubtub.R;
 import com.smedic.tubtub.adapters.VideosAdapter;
 import com.smedic.tubtub.database.YouTubeSqlDb;
+import com.smedic.tubtub.interfaces.OnFavoritesSelected;
 import com.smedic.tubtub.interfaces.OnItemSelected;
 import com.smedic.tubtub.model.YouTubeVideo;
 import com.smedic.tubtub.utils.NetworkConf;
@@ -46,6 +47,7 @@ public class RecentlyWatchedFragment extends BaseFragment implements
     private ListView recentlyPlayedListView;
     private VideosAdapter videoListAdapter;
     private OnItemSelected itemSelected;
+    private OnFavoritesSelected onFavoritesSelected;
     private NetworkConf conf;
     private Context context;
 
@@ -61,6 +63,7 @@ public class RecentlyWatchedFragment extends BaseFragment implements
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         recentlyPlayedVideos = new ArrayList<>();
+        conf = new NetworkConf(getActivity());
     }
 
     @Override
@@ -70,7 +73,7 @@ public class RecentlyWatchedFragment extends BaseFragment implements
         View v = inflater.inflate(R.layout.fragment_list, container, false);
         recentlyPlayedListView = (ListView) v.findViewById(R.id.fragment_list_items);
         recentlyPlayedListView.setOnItemClickListener(this);
-        videoListAdapter = new VideosAdapter(getActivity(), recentlyPlayedVideos, false);
+        videoListAdapter = new VideosAdapter(getActivity(), recentlyPlayedVideos);
         videoListAdapter.setOnItemEventsListener(this);
         recentlyPlayedListView.setAdapter(videoListAdapter);
 
@@ -83,23 +86,9 @@ public class RecentlyWatchedFragment extends BaseFragment implements
     @Override
     public void onResume() {
         super.onResume();
-        conf = new NetworkConf(getActivity());
         recentlyPlayedVideos.clear();
         recentlyPlayedVideos.addAll(YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.RECENTLY_WATCHED).readAll());
         videoListAdapter.notifyDataSetChanged();
-    }
-
-
-    @Override
-    public void setUserVisibleHint(boolean visible) {
-        super.setUserVisibleHint(visible);
-
-        if (visible && isResumed()) {
-            //Log.d(TAG, "RecentlyWatchedFragment visible and resumed");
-            //Only manually call onResume if fragment is already visible
-            //Otherwise allow natural fragment lifecycle to call onResume
-            onResume();
-        }
     }
 
     @Override
@@ -108,6 +97,7 @@ public class RecentlyWatchedFragment extends BaseFragment implements
         if (context instanceof MainActivity) {
             this.context = context;
             itemSelected = (MainActivity) context;
+            onFavoritesSelected = (MainActivity) context;
         }
     }
 
@@ -115,6 +105,8 @@ public class RecentlyWatchedFragment extends BaseFragment implements
     public void onDetach() {
         super.onDetach();
         this.context = null;
+        itemSelected = null;
+        onFavoritesSelected = null;
     }
 
     /**
@@ -132,5 +124,11 @@ public class RecentlyWatchedFragment extends BaseFragment implements
     public void onItemClick(AdapterView<?> parent, View view, int pos, long id) {
         YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.RECENTLY_WATCHED).create(recentlyPlayedVideos.get(pos));
         itemSelected.onVideoSelected(recentlyPlayedVideos.get(pos));
+    }
+
+    @Override
+    public void onFavoriteClicked(YouTubeVideo video, boolean isChecked) {
+        super.onFavoriteClicked(video, isChecked);
+        onFavoritesSelected.onFavoritesSelected(video, isChecked); // pass event to MainActivity
     }
 }

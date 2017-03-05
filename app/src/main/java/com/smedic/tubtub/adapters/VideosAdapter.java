@@ -31,6 +31,7 @@ import com.smedic.tubtub.database.YouTubeSqlDb;
 import com.smedic.tubtub.interfaces.ItemEventsListener;
 import com.smedic.tubtub.model.ItemType;
 import com.smedic.tubtub.model.YouTubeVideo;
+import com.smedic.tubtub.utils.Config;
 import com.squareup.picasso.Picasso;
 
 import java.util.List;
@@ -46,21 +47,19 @@ public class VideosAdapter extends ArrayAdapter<YouTubeVideo> {
     private Activity context;
     private final List<YouTubeVideo> list;
     private boolean[] itemChecked;
-    private boolean isFavoriteList;
     private ItemEventsListener itemEventsListener;
-    private ViewHolder holder;
 
-    public VideosAdapter(Activity context, List<YouTubeVideo> list, boolean isFavoriteList) {
+    public VideosAdapter(Activity context, List<YouTubeVideo> list) {
         super(context, R.layout.video_item, list);
         this.list = list;
         this.context = context;
-        this.itemChecked = new boolean[50];
-        this.isFavoriteList = isFavoriteList;
+        this.itemChecked = new boolean[(int) Config.NUMBER_OF_VIDEOS_RETURNED];
     }
 
     @Override
     public View getView(final int position, View convertView, final ViewGroup parent) {
 
+        ViewHolder holder;
         if (convertView == null) {
             holder = new ViewHolder();
             LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -72,40 +71,31 @@ public class VideosAdapter extends ArrayAdapter<YouTubeVideo> {
             holder.viewCount = (TextView) convertView.findViewById(R.id.views_number);
             holder.favoriteCheckBox = (CheckBox) convertView.findViewById(R.id.favoriteButton);
             holder.shareButton = (ImageView) convertView.findViewById(shareButton);
+            convertView.setTag(holder);
+        } else {
+            holder = (ViewHolder) convertView.getTag();
         }
 
-        final YouTubeVideo searchResult = list.get(position);
+        final YouTubeVideo video = list.get(position);
 
-        Picasso.with(context).load(searchResult.getThumbnailURL()).into(holder.thumbnail);
-        holder.title.setText(searchResult.getTitle());
-        holder.duration.setText(searchResult.getDuration());
-        holder.viewCount.setText(searchResult.getViewCount());
-
-        //set checked if exists in database
-        if (YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.FAVORITE).checkIfExists(searchResult.getId())) {
+        if (YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.FAVORITE).checkIfExists(video.getId())) {
             itemChecked[position] = true;
         } else {
             itemChecked[position] = false;
         }
+
+        Picasso.with(context).load(video.getThumbnailURL()).into(holder.thumbnail);
+        holder.title.setText(video.getTitle());
+        holder.duration.setText(video.getDuration());
+        holder.viewCount.setText(video.getViewCount());
+        holder.favoriteCheckBox.setOnCheckedChangeListener(null);
         holder.favoriteCheckBox.setChecked(itemChecked[position]);
 
         holder.favoriteCheckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton btn, boolean isChecked) {
                 itemChecked[position] = isChecked;
-            }
-        });
-
-        holder.favoriteCheckBox.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (((CheckBox) v).isChecked()) {
-                    YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.FAVORITE).create(searchResult);
-                } else {
-                    YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.FAVORITE).delete(searchResult.getId());
-                    if (isFavoriteList) {
-                        list.remove(position);
-                        notifyDataSetChanged();
-                    }
+                if (itemEventsListener != null) {
+                    itemEventsListener.onFavoriteClicked(video, isChecked);
                 }
             }
         });
@@ -115,7 +105,7 @@ public class VideosAdapter extends ArrayAdapter<YouTubeVideo> {
             public void onClick(View view) {
                 if (itemEventsListener != null) {
                     itemEventsListener.onShareClicked(ItemType.YOUTUBE_MEDIA_TYPE_VIDEO,
-                            searchResult.getId());
+                            video.getId());
                 }
             }
         });
@@ -135,16 +125,4 @@ public class VideosAdapter extends ArrayAdapter<YouTubeVideo> {
     public void setOnItemEventsListener(ItemEventsListener listener) {
         itemEventsListener = listener;
     }
-
-    @Override
-    public long getItemId(int i) {
-        return getItem(i).hashCode();
-    }
-
-
-    @Override
-    public boolean hasStableIds() {
-        return true;
-    }
-
 }

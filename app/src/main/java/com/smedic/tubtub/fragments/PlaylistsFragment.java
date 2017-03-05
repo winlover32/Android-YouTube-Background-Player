@@ -148,32 +148,15 @@ public class PlaylistsFragment extends BaseFragment {
     public void onDetach() {
         super.onDetach();
         this.context = null;
+        this.itemSelected = null;
     }
 
     @Override
     public void onResume() {
         super.onResume();
-
-        if (!getUserVisibleHint()) {
-            //do nothing for now
-        }
-
         playlists.clear();
         playlists.addAll(YouTubeSqlDb.getInstance().playlists().readAll());
         playlistsAdapter.notifyDataSetChanged();
-    }
-
-
-    @Override
-    public void setUserVisibleHint(boolean visible) {
-        super.setUserVisibleHint(visible);
-
-        if (visible && isResumed()) {
-            //Log.d(TAG, "PlaylistsFragment visible and resumed");
-            //Only manually call onResume if fragment is already visible
-            //Otherwise allow natural fragment lifecycle to call onResume
-            onResume();
-        }
     }
 
     /**
