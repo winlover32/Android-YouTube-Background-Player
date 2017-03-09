@@ -17,25 +17,25 @@ package com.smedic.tubtub.fragments;
 
 import android.content.Context;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ListView;
 
 import com.smedic.tubtub.MainActivity;
 import com.smedic.tubtub.R;
 import com.smedic.tubtub.adapters.PlaylistsAdapter;
 import com.smedic.tubtub.database.YouTubeSqlDb;
+import com.smedic.tubtub.interfaces.ItemEventsListener;
 import com.smedic.tubtub.interfaces.OnItemSelected;
 import com.smedic.tubtub.model.YouTubePlaylist;
 import com.smedic.tubtub.model.YouTubeVideo;
-import com.smedic.tubtub.utils.NetworkConf;
+import com.smedic.tubtub.utils.Config;
 import com.smedic.tubtub.youtube.YouTubePlaylistVideosLoader;
 import com.smedic.tubtub.youtube.YouTubePlaylistsLoader;
 
@@ -47,21 +47,14 @@ import java.util.List;
  * Class that handles list of the playlists acquired from YouTube
  * Created by smedic on 7.3.16..
  */
-public class PlaylistsFragment extends BaseFragment {
+public class PlaylistsFragment extends BaseFragment implements
+        ItemEventsListener<YouTubePlaylist> {
 
     private static final String TAG = "SMEDIC PlaylistsFrag";
 
     private ArrayList<YouTubePlaylist> playlists;
-    private ListView playlistsListView;
-    private Handler handler;
+    private RecyclerView playlistsListView;
     private PlaylistsAdapter playlistsAdapter;
-
-    public static final String ACCOUNT_KEY = "accountName";
-
-    private static final int REQUEST_ACCOUNT_PICKER = 2;
-    private static final int REQUEST_AUTHORIZATION = 3;
-
-    private NetworkConf networkConf;
     private SwipeRefreshLayout swipeToRefresh;
     private Context context;
     private OnItemSelected itemSelected;
@@ -77,10 +70,7 @@ public class PlaylistsFragment extends BaseFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        handler = new Handler();
         playlists = new ArrayList<>();
-        networkConf = new NetworkConf(getActivity());
     }
 
     @Override
@@ -88,10 +78,21 @@ public class PlaylistsFragment extends BaseFragment {
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_list, container, false);
         /* Setup the ListView */
-        playlistsListView = (ListView) v.findViewById(R.id.fragment_list_items);
+        playlistsListView = (RecyclerView) v.findViewById(R.id.fragment_list_items);
+        playlistsListView.setLayoutManager(new LinearLayoutManager(context));
+
         swipeToRefresh = (SwipeRefreshLayout) v.findViewById(R.id.swipe_to_refresh);
 
-        setupListViewAndAdapter();
+        playlistsAdapter = new PlaylistsAdapter(context, playlists);
+        playlistsAdapter.setOnItemEventsListener(this);
+        playlistsListView.setAdapter(playlistsAdapter);
+
+        swipeToRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                searchPlaylists();
+            }
+        });
         return v;
     }
 
@@ -128,7 +129,6 @@ public class PlaylistsFragment extends BaseFragment {
 
             @Override
             public void onLoadFinished(Loader<List<YouTubePlaylist>> loader, List<YouTubePlaylist> data) {
-                Log.d(TAG, "onLoadFinished: ");
                 if (data == null) {
                     swipeToRefresh.setRefreshing(false);
                     return;
@@ -137,6 +137,8 @@ public class PlaylistsFragment extends BaseFragment {
                 for (YouTubePlaylist playlist : data) {
                     YouTubeSqlDb.getInstance().playlists().create(playlist);
                 }
+
+                Log.d(TAG, "onLoadFinished: data size: " + data.size());
 
                 playlists.clear();
                 playlists.addAll(data);
@@ -153,43 +155,9 @@ public class PlaylistsFragment extends BaseFragment {
             public void onLoaderReset(Loader<List<YouTubePlaylist>> loader) {
                 playlists.clear();
                 playlists.addAll(Collections.<YouTubePlaylist>emptyList());
+                playlistsAdapter.notifyDataSetChanged();
             }
         }).forceLoad();
-    }
-
-    /**
-     * Setups list view and adapter for storing YouTube playlists
-     */
-    public void setupListViewAndAdapter() {
-        playlistsAdapter = new PlaylistsAdapter(context, playlists);
-        playlistsAdapter.setOnItemEventsListener(this);
-        playlistsListView.setAdapter(playlistsAdapter);
-
-        swipeToRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                if (networkConf.isNetworkAvailable()) {
-                    searchPlaylists();
-                } else {
-                    networkConf.createNetErrorDialog();
-                }
-            }
-        });
-
-        playlistsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-
-            @Override
-            public void onItemClick(AdapterView<?> av, View v, int pos,
-                                    long id) {
-                //check network connectivity
-                if (!networkConf.isNetworkAvailable()) {
-                    networkConf.createNetErrorDialog();
-                    return;
-                }
-                acquirePlaylistVideos(playlists.get(pos).getId()); //results are in onVideosReceived callback method
-            }
-        });
-
     }
 
     private void acquirePlaylistVideos(final String playlistId) {
@@ -249,5 +217,21 @@ public class PlaylistsFragment extends BaseFragment {
             }
         }
         return "";
+    }
+
+    @Override
+    public void onShareClicked(String itemId) {
+        share(Config.SHARE_PLAYLIST_URL + itemId);
+    }
+
+    @Override
+    public void onFavoriteClicked(YouTubeVideo video, boolean isChecked) {
+        //do nothing
+    }
+
+    @Override
+    public void onItemClick(YouTubePlaylist youTubePlaylist) {
+        //results are in onVideosReceived callback method
+        acquirePlaylistVideos(youTubePlaylist.getId());
     }
 }

@@ -247,7 +247,6 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
                         @Override
                         public void onStop() {
                             super.onStop();
-                            Log.d(TAG, "onStop: ");
                             stopPlayer();
                             //remove notification and stop service
                             NotificationManager notificationManager = (NotificationManager) getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);

@@ -281,7 +281,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             networkConf.createNetErrorDialog();
             return;
         }
-        Log.d(TAG, "onVideoSelected: ");
         Intent serviceIntent = new Intent(this, BackgroundAudioService.class);
         serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
         serviceIntent.putExtra(Config.YOUTUBE_TYPE, ItemType.YOUTUBE_MEDIA_TYPE_VIDEO);
@@ -295,7 +294,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             networkConf.createNetErrorDialog();
             return;
         }
-        Log.d(TAG, "onPlaylistSelected: ");
         Intent serviceIntent = new Intent(this, BackgroundAudioService.class);
         serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
         serviceIntent.putExtra(Config.YOUTUBE_TYPE, ItemType.YOUTUBE_MEDIA_TYPE_PLAYLIST);

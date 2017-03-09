@@ -17,19 +17,20 @@ package com.smedic.tubtub.fragments;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ListView;
 
 import com.smedic.tubtub.MainActivity;
 import com.smedic.tubtub.R;
 import com.smedic.tubtub.adapters.VideosAdapter;
 import com.smedic.tubtub.database.YouTubeSqlDb;
+import com.smedic.tubtub.interfaces.ItemEventsListener;
 import com.smedic.tubtub.interfaces.OnItemSelected;
 import com.smedic.tubtub.model.YouTubeVideo;
-import com.smedic.tubtub.utils.NetworkConf;
+import com.smedic.tubtub.utils.Config;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,15 +38,15 @@ import java.util.List;
 /**
  * Created by Stevan Medic on 21.3.16..
  */
-public class FavoritesFragment extends BaseFragment implements AdapterView.OnItemClickListener {
+public class FavoritesFragment extends BaseFragment implements ItemEventsListener<YouTubeVideo> {
+
     private static final String TAG = "SMEDIC Favorites";
     private List<YouTubeVideo> favoriteVideos;
 
-    private ListView favoritesListView;
+    private RecyclerView favoritesListView;
     private VideosAdapter videoListAdapter;
-    private NetworkConf conf;
-    private Context context;
     private OnItemSelected itemSelected;
+    private Context context;
 
     public FavoritesFragment() {
         // Required empty public constructor
@@ -58,9 +59,7 @@ public class FavoritesFragment extends BaseFragment implements AdapterView.OnIte
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         favoriteVideos = new ArrayList<>();
-        conf = new NetworkConf(getActivity());
     }
 
     @Override
@@ -68,9 +67,10 @@ public class FavoritesFragment extends BaseFragment implements AdapterView.OnIte
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_list, container, false);
-        favoritesListView = (ListView) v.findViewById(R.id.fragment_list_items);
-        favoritesListView.setOnItemClickListener(this);
-        videoListAdapter = new VideosAdapter(getActivity(), favoriteVideos);
+        favoritesListView = (RecyclerView) v.findViewById(R.id.fragment_list_items);
+        favoritesListView.setLayoutManager(new LinearLayoutManager(context));
+
+        videoListAdapter = new VideosAdapter(context, favoriteVideos);
         videoListAdapter.setOnItemEventsListener(this);
         favoritesListView.setAdapter(videoListAdapter);
 
@@ -91,16 +91,16 @@ public class FavoritesFragment extends BaseFragment implements AdapterView.OnIte
     public void onAttach(Context context) {
         super.onAttach(context);
         if (context instanceof MainActivity) {
-            this.context = context;
             this.itemSelected = (MainActivity) context;
+            this.context = context;
         }
     }
 
     @Override
     public void onDetach() {
         super.onDetach();
-        this.context = null;
         this.itemSelected = null;
+        this.context = null;
     }
 
     /**
@@ -121,23 +121,23 @@ public class FavoritesFragment extends BaseFragment implements AdapterView.OnIte
         videoListAdapter.notifyDataSetChanged();
     }
 
-    /**
-     * Adds listener for list item choosing
-     */
     @Override
-    public void onItemClick(AdapterView<?> parent, View view, int pos, long id) {
-        YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.RECENTLY_WATCHED)
-                .create(favoriteVideos.get(pos));
-        itemSelected.onPlaylistSelected(favoriteVideos, pos);
+    public void onShareClicked(String itemId) {
+        share(Config.SHARE_VIDEO_URL + itemId);
     }
 
     @Override
     public void onFavoriteClicked(YouTubeVideo video, boolean isChecked) {
-        super.onFavoriteClicked(video, isChecked);
         if (isChecked) {
             addToFavoritesList(video);
         } else {
             removeFromFavorites(video);
         }
+    }
+
+    @Override
+    public void onItemClick(YouTubeVideo video) {
+        YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.RECENTLY_WATCHED).create(video);
+        itemSelected.onPlaylistSelected(favoriteVideos, favoriteVideos.indexOf(video));
     }
 }

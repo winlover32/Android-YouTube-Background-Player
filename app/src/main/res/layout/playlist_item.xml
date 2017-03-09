@@ -13,7 +13,7 @@
         android:id="@+id/row_item"
         android:layout_width="match_parent"
         android:layout_height="100dp"
-        android:background="?android:attr/activatedBackgroundIndicator"
+        android:background="?android:attr/selectableItemBackground"
         android:descendantFocusability="blocksDescendants"
         android:orientation="horizontal"
         android:paddingBottom="4dp"
@@ -66,8 +66,8 @@
                 android:layout_alignParentBottom="true"
                 android:layout_alignParentEnd="true"
                 android:layout_alignParentRight="true"
-                android:layout_marginEnd="10dp"
-                android:layout_marginRight="10dp"
+                android:layout_marginEnd="15dp"
+                android:layout_marginRight="15dp"
                 android:background="@drawable/share_button_selector" />
 
         </RelativeLayout>
