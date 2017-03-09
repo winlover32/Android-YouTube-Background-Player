@@ -13,7 +13,7 @@
         android:id="@+id/row_item"
         android:layout_width="match_parent"
         android:layout_height="100dp"
-        android:background="?android:attr/activatedBackgroundIndicator"
+        android:background="?android:attr/selectableItemBackground"
         android:descendantFocusability="blocksDescendants"
         android:orientation="horizontal"
         android:paddingBottom="4dp"

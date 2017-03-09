@@ -17,20 +17,21 @@ package com.smedic.tubtub.fragments;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ListView;
 
 import com.smedic.tubtub.MainActivity;
 import com.smedic.tubtub.R;
 import com.smedic.tubtub.adapters.VideosAdapter;
 import com.smedic.tubtub.database.YouTubeSqlDb;
+import com.smedic.tubtub.interfaces.ItemEventsListener;
 import com.smedic.tubtub.interfaces.OnFavoritesSelected;
 import com.smedic.tubtub.interfaces.OnItemSelected;
 import com.smedic.tubtub.model.YouTubeVideo;
-import com.smedic.tubtub.utils.NetworkConf;
+import com.smedic.tubtub.utils.Config;
 
 import java.util.ArrayList;
 
@@ -39,16 +40,15 @@ import java.util.ArrayList;
  * Created by smedic on 7.3.16..
  */
 public class RecentlyWatchedFragment extends BaseFragment implements
-        AdapterView.OnItemClickListener {
+        ItemEventsListener<YouTubeVideo> {
 
     private static final String TAG = "SMEDIC RecentlyWatched";
     private ArrayList<YouTubeVideo> recentlyPlayedVideos;
 
-    private ListView recentlyPlayedListView;
+    private RecyclerView recentlyPlayedListView;
     private VideosAdapter videoListAdapter;
     private OnItemSelected itemSelected;
     private OnFavoritesSelected onFavoritesSelected;
-    private NetworkConf conf;
     private Context context;
 
     public RecentlyWatchedFragment() {
@@ -63,7 +63,6 @@ public class RecentlyWatchedFragment extends BaseFragment implements
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         recentlyPlayedVideos = new ArrayList<>();
-        conf = new NetworkConf(getActivity());
     }
 
     @Override
@@ -71,9 +70,9 @@ public class RecentlyWatchedFragment extends BaseFragment implements
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_list, container, false);
-        recentlyPlayedListView = (ListView) v.findViewById(R.id.fragment_list_items);
-        recentlyPlayedListView.setOnItemClickListener(this);
-        videoListAdapter = new VideosAdapter(getActivity(), recentlyPlayedVideos);
+        recentlyPlayedListView = (RecyclerView) v.findViewById(R.id.fragment_list_items);
+        recentlyPlayedListView.setLayoutManager(new LinearLayoutManager(context));
+        videoListAdapter = new VideosAdapter(context, recentlyPlayedVideos);
         videoListAdapter.setOnItemEventsListener(this);
         recentlyPlayedListView.setAdapter(videoListAdapter);
 
@@ -117,18 +116,19 @@ public class RecentlyWatchedFragment extends BaseFragment implements
         videoListAdapter.notifyDataSetChanged();
     }
 
-    /**
-     * Adds listener for list item choosing
-     */
     @Override
-    public void onItemClick(AdapterView<?> parent, View view, int pos, long id) {
-        YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.RECENTLY_WATCHED).create(recentlyPlayedVideos.get(pos));
-        itemSelected.onVideoSelected(recentlyPlayedVideos.get(pos));
+    public void onShareClicked(String itemId) {
+        share(Config.SHARE_VIDEO_URL + itemId);
     }
 
     @Override
     public void onFavoriteClicked(YouTubeVideo video, boolean isChecked) {
-        super.onFavoriteClicked(video, isChecked);
         onFavoritesSelected.onFavoritesSelected(video, isChecked); // pass event to MainActivity
+    }
+
+    @Override
+    public void onItemClick(YouTubeVideo video) {
+        YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.RECENTLY_WATCHED).create(video);
+        itemSelected.onVideoSelected(video);
     }
 }

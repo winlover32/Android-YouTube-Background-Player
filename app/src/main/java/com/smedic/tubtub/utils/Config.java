@@ -12,7 +12,9 @@ public final class Config {
     public static final int YOUTUBE_MEDIA_NO_NEW_REQUEST = -1;
 
     public static final String SUGGESTIONS_URL = "http://suggestqueries.google.com/complete/search?client=youtube&ds=yt&q=";
-
+    public static final String YOUTUBE_BASE_URL = "http://youtube.com/watch?v=";
+    public static final String SHARE_VIDEO_URL = "http://youtube.com/watch?v=";
+    public static final String SHARE_PLAYLIST_URL = "https://www.youtube.com/playlist?list=";
     public static final String YOUTUBE_TYPE = "YT_MEDIA_TYPE";
     public static final String YOUTUBE_TYPE_VIDEO = "YT_VIDEO";
     public static final String YOUTUBE_TYPE_PLAYLIST= "YT_PLAYLIST";

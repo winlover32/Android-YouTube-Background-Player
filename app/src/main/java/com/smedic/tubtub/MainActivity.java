@@ -75,6 +75,7 @@ import java.util.List;
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
+import static com.google.api.client.http.HttpMethods.HEAD;
 import static com.smedic.tubtub.R.layout.suggestions;
 import static com.smedic.tubtub.youtube.YouTubeSingleton.getCredential;
 
@@ -282,9 +283,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             networkConf.createNetErrorDialog();
             return;
         }
-
-        Toast.makeText(this, "Video started: " + video.getTitle(), Toast.LENGTH_SHORT).show();
-
         Intent serviceIntent = new Intent(this, BackgroundAudioService.class);
         serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
         serviceIntent.putExtra(Config.YOUTUBE_TYPE, ItemType.YOUTUBE_MEDIA_TYPE_VIDEO);
@@ -298,10 +296,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             networkConf.createNetErrorDialog();
             return;
         }
-
-        Toast.makeText(this, "Playlist started: " + playlist.get(position).getTitle(),
-                Toast.LENGTH_SHORT).show();
-
         Intent serviceIntent = new Intent(this, BackgroundAudioService.class);
         serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
         serviceIntent.putExtra(Config.YOUTUBE_TYPE, ItemType.YOUTUBE_MEDIA_TYPE_PLAYLIST);

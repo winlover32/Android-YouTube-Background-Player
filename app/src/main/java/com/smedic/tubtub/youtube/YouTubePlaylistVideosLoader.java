@@ -43,7 +43,6 @@ public class YouTubePlaylistVideosLoader extends AsyncTaskLoader<List<YouTubeVid
 
         List<PlaylistItem> playlistItemList = new ArrayList<>();
         List<YouTubeVideo> playlistItems = new ArrayList<>();
-
         String nextToken = "";
         // Retrieve the playlist of the channel's uploaded videos.
         YouTube.PlaylistItems.List playlistItemRequest;
@@ -73,7 +72,6 @@ public class YouTubePlaylistVideosLoader extends AsyncTaskLoader<List<YouTubeVid
             }
         } catch (UnknownHostException e) {
             //Toast.makeText(activity.getApplicationContext(), "Check internet connection", Toast.LENGTH_SHORT).show();
-            Log.d(TAG, "loadInBackground: unknown host");
             e.printStackTrace();
             return Collections.emptyList();
         } catch (IOException e) {

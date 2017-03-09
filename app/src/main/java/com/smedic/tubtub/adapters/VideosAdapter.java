@@ -15,12 +15,11 @@
  */
 package com.smedic.tubtub.adapters;
 
-import android.app.Activity;
 import android.content.Context;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
@@ -29,55 +28,42 @@ import android.widget.TextView;
 import com.smedic.tubtub.R;
 import com.smedic.tubtub.database.YouTubeSqlDb;
 import com.smedic.tubtub.interfaces.ItemEventsListener;
-import com.smedic.tubtub.model.ItemType;
 import com.smedic.tubtub.model.YouTubeVideo;
 import com.smedic.tubtub.utils.Config;
 import com.squareup.picasso.Picasso;
 
 import java.util.List;
 
-import static com.smedic.tubtub.R.id.shareButton;
-
 /**
  * Custom ArrayAdapter which enables setup of a list view row views
  * Created by smedic on 8.2.16..
  */
-public class VideosAdapter extends ArrayAdapter<YouTubeVideo> {
+public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.ViewHolder>
+        implements View.OnClickListener {
 
-    private Activity context;
+    private static final String TAG = "SMEDIC";
+    private Context context;
     private final List<YouTubeVideo> list;
     private boolean[] itemChecked;
-    private ItemEventsListener itemEventsListener;
+    private ItemEventsListener<YouTubeVideo> itemEventsListener;
 
-    public VideosAdapter(Activity context, List<YouTubeVideo> list) {
-        super(context, R.layout.video_item, list);
+    public VideosAdapter(Context context, List<YouTubeVideo> list) {
+        super();
         this.list = list;
         this.context = context;
         this.itemChecked = new boolean[(int) Config.NUMBER_OF_VIDEOS_RETURNED];
     }
 
     @Override
-    public View getView(final int position, View convertView, final ViewGroup parent) {
+    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.video_item, null);
+        view.setOnClickListener(this);
+        return new ViewHolder(view);
+    }
 
-        ViewHolder holder;
-        if (convertView == null) {
-            holder = new ViewHolder();
-            LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-            convertView = inflater.inflate(R.layout.video_item, parent, false);
-
-            holder.thumbnail = (ImageView) convertView.findViewById(R.id.video_thumbnail);
-            holder.title = (TextView) convertView.findViewById(R.id.video_title);
-            holder.duration = (TextView) convertView.findViewById(R.id.video_duration);
-            holder.viewCount = (TextView) convertView.findViewById(R.id.views_number);
-            holder.favoriteCheckBox = (CheckBox) convertView.findViewById(R.id.favoriteButton);
-            holder.shareButton = (ImageView) convertView.findViewById(shareButton);
-            convertView.setTag(holder);
-        } else {
-            holder = (ViewHolder) convertView.getTag();
-        }
-
+    @Override
+    public void onBindViewHolder(ViewHolder holder, final int position) {
         final YouTubeVideo video = list.get(position);
-
         if (YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.FAVORITE).checkIfExists(video.getId())) {
             itemChecked[position] = true;
         } else {
@@ -104,25 +90,47 @@ public class VideosAdapter extends ArrayAdapter<YouTubeVideo> {
             @Override
             public void onClick(View view) {
                 if (itemEventsListener != null) {
-                    itemEventsListener.onShareClicked(ItemType.YOUTUBE_MEDIA_TYPE_VIDEO,
-                            video.getId());
+                    itemEventsListener.onShareClicked(video.getId());
                 }
             }
         });
 
-        return convertView;
+        holder.itemView.setTag(video);
     }
 
-    private static class ViewHolder {
+    @Override
+    public int getItemCount() {
+        return (null != list ? list.size() : 0);
+    }
+
+    @Override
+    public void onClick(View v) {
+        if (itemEventsListener != null) {
+            YouTubeVideo item = (YouTubeVideo) v.getTag();
+            itemEventsListener.onItemClick(item);
+        }
+    }
+
+    class ViewHolder extends RecyclerView.ViewHolder {
         ImageView thumbnail;
         TextView title;
         TextView duration;
         TextView viewCount;
         CheckBox favoriteCheckBox;
         ImageView shareButton;
+
+        public ViewHolder(View itemView) {
+            super(itemView);
+            thumbnail = (ImageView) itemView.findViewById(R.id.video_thumbnail);
+            title = (TextView) itemView.findViewById(R.id.video_title);
+            duration = (TextView) itemView.findViewById(R.id.video_duration);
+            viewCount = (TextView) itemView.findViewById(R.id.views_number);
+            favoriteCheckBox = (CheckBox) itemView.findViewById(R.id.favoriteButton);
+            shareButton = (ImageView) itemView.findViewById(R.id.shareButton);
+        }
     }
 
-    public void setOnItemEventsListener(ItemEventsListener listener) {
+    public void setOnItemEventsListener(ItemEventsListener<YouTubeVideo> listener) {
         itemEventsListener = listener;
     }
 }

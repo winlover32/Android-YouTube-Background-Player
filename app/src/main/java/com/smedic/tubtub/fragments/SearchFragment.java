@@ -19,20 +19,22 @@ import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ListView;
 import android.widget.ProgressBar;
 
 import com.smedic.tubtub.MainActivity;
 import com.smedic.tubtub.R;
 import com.smedic.tubtub.adapters.VideosAdapter;
 import com.smedic.tubtub.database.YouTubeSqlDb;
+import com.smedic.tubtub.interfaces.ItemEventsListener;
 import com.smedic.tubtub.interfaces.OnFavoritesSelected;
 import com.smedic.tubtub.interfaces.OnItemSelected;
 import com.smedic.tubtub.model.YouTubeVideo;
+import com.smedic.tubtub.utils.Config;
 import com.smedic.tubtub.utils.NetworkConf;
 import com.smedic.tubtub.youtube.YouTubeVideosLoader;
 
@@ -44,10 +46,10 @@ import java.util.List;
  * Class that handles list of the videos searched on YouTube
  * Created by smedic on 7.3.16..
  */
-public class SearchFragment extends BaseFragment implements AdapterView.OnItemClickListener {
+public class SearchFragment extends BaseFragment implements ItemEventsListener<YouTubeVideo> {
 
     private static final String TAG = "SMEDIC search frag";
-    private ListView videosFoundListView;
+    private RecyclerView videosFoundListView;
     private List<YouTubeVideo> searchResultsList;
     private VideosAdapter videoListAdapter;
     private ProgressBar loadingProgressBar;
@@ -77,10 +79,10 @@ public class SearchFragment extends BaseFragment implements AdapterView.OnItemCl
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_list, container, false);
-        videosFoundListView = (ListView) v.findViewById(R.id.fragment_list_items);
-        videosFoundListView.setOnItemClickListener(this);
+        videosFoundListView = (RecyclerView) v.findViewById(R.id.fragment_list_items);
+        videosFoundListView.setLayoutManager(new LinearLayoutManager(context));
         loadingProgressBar = (ProgressBar) v.findViewById(R.id.fragment_progress_bar);
-        videoListAdapter = new VideosAdapter(getActivity(), searchResultsList);
+        videoListAdapter = new VideosAdapter(context, searchResultsList);
         videoListAdapter.setOnItemEventsListener(this);
         videosFoundListView.setAdapter(videoListAdapter);
 
@@ -143,22 +145,24 @@ public class SearchFragment extends BaseFragment implements AdapterView.OnItemCl
             public void onLoaderReset(Loader<List<YouTubeVideo>> loader) {
                 searchResultsList.clear();
                 searchResultsList.addAll(Collections.<YouTubeVideo>emptyList());
+                videoListAdapter.notifyDataSetChanged();
             }
         }).forceLoad();
     }
 
-    /**
-     * Adds listener for list item choosing
-     */
     @Override
-    public void onItemClick(AdapterView<?> parent, View view, int pos, long id) {
-        YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.RECENTLY_WATCHED).create(searchResultsList.get(pos));
-        itemSelected.onVideoSelected(searchResultsList.get(pos));
+    public void onShareClicked(String itemId) {
+        share(Config.SHARE_VIDEO_URL + itemId);
     }
 
     @Override
     public void onFavoriteClicked(YouTubeVideo video, boolean isChecked) {
-        super.onFavoriteClicked(video, isChecked);
         onFavoritesSelected.onFavoritesSelected(video, isChecked); // pass event to MainActivity
+    }
+
+    @Override
+    public void onItemClick(YouTubeVideo video) {
+        YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.RECENTLY_WATCHED).create(video);
+        itemSelected.onVideoSelected(video);
     }
 }

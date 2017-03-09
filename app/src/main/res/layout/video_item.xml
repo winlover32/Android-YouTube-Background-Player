@@ -13,7 +13,7 @@
         android:id="@+id/row_item"
         android:layout_width="match_parent"
         android:layout_height="100dp"
-        android:background="?android:attr/activatedBackgroundIndicator"
+        android:background="?android:attr/selectableItemBackground"
         android:descendantFocusability="blocksDescendants"
         android:orientation="horizontal"
         android:paddingBottom="4dp"
@@ -70,8 +70,8 @@
                 android:layout_alignParentBottom="true"
                 android:layout_alignParentEnd="true"
                 android:layout_alignParentRight="true"
-                android:layout_marginEnd="5dp"
-                android:layout_marginRight="5dp"
+                android:layout_marginEnd="15dp"
+                android:layout_marginRight="15dp"
                 android:background="@drawable/favorite_button_selector"
                 android:button="@null" />
 
@@ -80,8 +80,8 @@
                 android:layout_width="30dp"
                 android:layout_height="30dp"
                 android:layout_alignParentBottom="true"
-                android:layout_marginEnd="15dp"
-                android:layout_marginRight="15dp"
+                android:layout_marginEnd="20dp"
+                android:layout_marginRight="20dp"
                 android:layout_toLeftOf="@id/favoriteButton"
                 android:layout_toStartOf="@id/favoriteButton"
                 android:background="@drawable/share_button_selector" />
