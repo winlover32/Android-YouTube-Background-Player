@@ -49,7 +49,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.Toast;
 
 import com.flask.colorpicker.ColorPickerView;
 import com.flask.colorpicker.OnColorSelectedListener;
@@ -269,7 +268,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
     @Override
     public void onPermissionsGranted(int requestCode, List<String> perms) {
-        //Log.d(TAG, "onPermissionsGranted:");
+        Log.d(TAG, "onPermissionsGranted:");
     }
 
     @Override
@@ -307,10 +306,8 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     @Override
     public void onFavoritesSelected(YouTubeVideo video, boolean isChecked) {
         if (isChecked) {
-            Log.d(TAG, "onFavoritesSelected: 1");
             favoritesFragment.addToFavoritesList(video);
         } else {
-            Log.d(TAG, "onFavoritesSelected: 2");
             favoritesFragment.removeFromFavorites(video);
         }
     }

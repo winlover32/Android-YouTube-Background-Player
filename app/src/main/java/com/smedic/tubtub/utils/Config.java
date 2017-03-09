@@ -9,8 +9,6 @@ public final class Config {
 
     public static final boolean DEBUG = false;
 
-    public static final int YOUTUBE_MEDIA_NO_NEW_REQUEST = -1;
-
     public static final String SUGGESTIONS_URL = "http://suggestqueries.google.com/complete/search?client=youtube&ds=yt&q=";
     public static final String YOUTUBE_BASE_URL = "http://youtube.com/watch?v=";
     public static final String SHARE_VIDEO_URL = "http://youtube.com/watch?v=";
