@@ -156,7 +156,10 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
      * @param intent
      */
     private void handleMedia(Intent intent) {
-        ItemType intentMediaType = (ItemType) intent.getSerializableExtra(Config.YOUTUBE_TYPE);
+        ItemType intentMediaType = ItemType.YOUTUBE_MEDIA_NONE;
+        if(intent.getSerializableExtra(Config.YOUTUBE_TYPE) != null) {
+            intentMediaType= (ItemType) intent.getSerializableExtra(Config.YOUTUBE_TYPE);
+        }
         switch (intentMediaType) {
             case YOUTUBE_MEDIA_NONE: //video is paused,so no new playback requests should be processed
                 mMediaPlayer.start();

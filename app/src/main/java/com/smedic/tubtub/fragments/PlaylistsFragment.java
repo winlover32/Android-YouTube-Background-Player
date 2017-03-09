@@ -15,13 +15,11 @@
  */
 package com.smedic.tubtub.fragments;
 
-import android.accounts.AccountManager;
-import android.app.Activity;
-import android.content.Intent;
-import android.content.SharedPreferences;
+import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
-import android.preference.PreferenceManager;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.Loader;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -29,29 +27,27 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
-import android.widget.TextView;
-import android.widget.Toast;
 
-import com.smedic.tubtub.BackgroundAudioService;
+import com.smedic.tubtub.MainActivity;
 import com.smedic.tubtub.R;
 import com.smedic.tubtub.adapters.PlaylistsAdapter;
 import com.smedic.tubtub.database.YouTubeSqlDb;
-import com.smedic.tubtub.interfaces.YouTubePlaylistsReceiver;
-import com.smedic.tubtub.interfaces.YouTubeVideosReceiver;
-import com.smedic.tubtub.model.ItemType;
+import com.smedic.tubtub.interfaces.OnItemSelected;
 import com.smedic.tubtub.model.YouTubePlaylist;
 import com.smedic.tubtub.model.YouTubeVideo;
-import com.smedic.tubtub.utils.Config;
 import com.smedic.tubtub.utils.NetworkConf;
-import com.smedic.tubtub.youtube.YouTubeSearch;
+import com.smedic.tubtub.youtube.YouTubePlaylistVideosLoader;
+import com.smedic.tubtub.youtube.YouTubePlaylistsLoader;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Class that handles list of the playlists acquired from YouTube
  * Created by smedic on 7.3.16..
  */
-public class PlaylistsFragment extends BaseFragment implements YouTubeVideosReceiver, YouTubePlaylistsReceiver {
+public class PlaylistsFragment extends BaseFragment {
 
     private static final String TAG = "SMEDIC PlaylistsFrag";
 
@@ -61,18 +57,21 @@ public class PlaylistsFragment extends BaseFragment implements YouTubeVideosRece
     private PlaylistsAdapter playlistsAdapter;
 
     public static final String ACCOUNT_KEY = "accountName";
-    private String mChosenAccountName;
 
     private static final int REQUEST_ACCOUNT_PICKER = 2;
     private static final int REQUEST_AUTHORIZATION = 3;
 
-    private YouTubeSearch youTubeSearch;
-    private TextView userNameTextView;
     private NetworkConf networkConf;
     private SwipeRefreshLayout swipeToRefresh;
+    private Context context;
+    private OnItemSelected itemSelected;
 
     public PlaylistsFragment() {
         // Required empty public constructor
+    }
+
+    public static PlaylistsFragment newInstance() {
+        return new PlaylistsFragment();
     }
 
     @Override
@@ -81,11 +80,6 @@ public class PlaylistsFragment extends BaseFragment implements YouTubeVideosRece
 
         handler = new Handler();
         playlists = new ArrayList<>();
-
-        youTubeSearch = new YouTubeSearch(getActivity(), this);
-        youTubeSearch.setYouTubePlaylistsReceiver(this);
-        youTubeSearch.setYouTubeVideosReceiver(this);
-
         networkConf = new NetworkConf(getActivity());
     }
 
@@ -98,119 +92,76 @@ public class PlaylistsFragment extends BaseFragment implements YouTubeVideosRece
         swipeToRefresh = (SwipeRefreshLayout) v.findViewById(R.id.swipe_to_refresh);
 
         setupListViewAndAdapter();
-
-        if (savedInstanceState != null) {
-            mChosenAccountName = savedInstanceState.getString(ACCOUNT_KEY);
-            youTubeSearch.setAuthSelectedAccountName(mChosenAccountName);
-            userNameTextView.setText(extractUserName(mChosenAccountName));
-            Toast.makeText(getContext(), "Hi " + extractUserName(mChosenAccountName), Toast.LENGTH_SHORT).show();
-        } else {
-            loadAccount();
-        }
-
         return v;
     }
 
-    /**
-     * Loads account saved in preferences
-     */
-    private void loadAccount() {
-        SharedPreferences sp = PreferenceManager
-                .getDefaultSharedPreferences(getActivity());
-        mChosenAccountName = sp.getString(ACCOUNT_KEY, null);
-
-        if (mChosenAccountName != null) {
-            youTubeSearch.setAuthSelectedAccountName(mChosenAccountName);
-            Toast.makeText(getContext(), "Hi " + extractUserName(mChosenAccountName), Toast.LENGTH_SHORT).show();
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        if (context instanceof MainActivity) {
+            this.context = context;
+            itemSelected = (MainActivity) context;
         }
     }
 
-    /**
-     * Save account in preferences for future usages
-     */
-    private void saveAccount() {
-        Log.d(TAG, "Saving account name... " + mChosenAccountName);
-        SharedPreferences sp = PreferenceManager
-                .getDefaultSharedPreferences(getActivity());
-        sp.edit().putString(ACCOUNT_KEY, mChosenAccountName).apply();
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        this.context = null;
+        this.itemSelected = null;
     }
 
     @Override
     public void onResume() {
         super.onResume();
-
-        if (!getUserVisibleHint()) {
-            //do nothing for now
-        }
-
         playlists.clear();
         playlists.addAll(YouTubeSqlDb.getInstance().playlists().readAll());
         playlistsAdapter.notifyDataSetChanged();
     }
 
+    public void searchPlaylists() {
+        getLoaderManager().restartLoader(2, null, new LoaderManager.LoaderCallbacks<List<YouTubePlaylist>>() {
+            @Override
+            public Loader<List<YouTubePlaylist>> onCreateLoader(final int id, final Bundle args) {
+                return new YouTubePlaylistsLoader(context);
+            }
 
-    @Override
-    public void setUserVisibleHint(boolean visible) {
-        super.setUserVisibleHint(visible);
-
-        if (visible && isResumed()) {
-            //Log.d(TAG, "PlaylistsFragment visible and resumed");
-            //Only manually call onResume if fragment is already visible
-            //Otherwise allow natural fragment lifecycle to call onResume
-            onResume();
-        }
-    }
-
-    /**
-     * Handles Google OAuth 2.0 authorization or account chosen result
-     *
-     * @param requestCode
-     * @param resultCode
-     * @param data
-     */
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        switch (requestCode) {
-            case REQUEST_AUTHORIZATION:
-                if (resultCode != Activity.RESULT_OK) {
-                    chooseAccount();
+            @Override
+            public void onLoadFinished(Loader<List<YouTubePlaylist>> loader, List<YouTubePlaylist> data) {
+                Log.d(TAG, "onLoadFinished: ");
+                if (data == null) {
+                    swipeToRefresh.setRefreshing(false);
+                    return;
                 }
-                break;
-            case REQUEST_ACCOUNT_PICKER:
-                if (resultCode == Activity.RESULT_OK && data != null
-                        && data.getExtras() != null) {
-                    String accountName = data.getExtras().getString(
-                            AccountManager.KEY_ACCOUNT_NAME);
-                    if (accountName != null) {
-                        mChosenAccountName = accountName;
-                        youTubeSearch.setAuthSelectedAccountName(accountName);
-                        userNameTextView.setText(extractUserName(mChosenAccountName));
-                        Toast.makeText(getContext(), "Hi " + extractUserName(mChosenAccountName), Toast.LENGTH_SHORT).show();
-                        saveAccount();
-                    }
-
-                    youTubeSearch.searchPlaylists();
+                YouTubeSqlDb.getInstance().playlists().deleteAll();
+                for (YouTubePlaylist playlist : data) {
+                    YouTubeSqlDb.getInstance().playlists().create(playlist);
                 }
-                break;
-        }
-    }
 
-    /**
-     * Choose Google account if OAuth 2.0 choosing is necessary
-     * acquiring YouTube private playlists requires OAuth 2.0 authorization
-     */
-    private void chooseAccount() {
-        startActivityForResult(youTubeSearch.getCredential().newChooseAccountIntent(),
-                REQUEST_ACCOUNT_PICKER);
+                playlists.clear();
+                playlists.addAll(data);
+                playlistsAdapter.notifyDataSetChanged();
+                swipeToRefresh.setRefreshing(false);
+
+                for (YouTubePlaylist playlist : playlists) {
+                    Log.d(TAG, "onLoadFinished: >>> " + playlist.getTitle());
+                }
+
+            }
+
+            @Override
+            public void onLoaderReset(Loader<List<YouTubePlaylist>> loader) {
+                playlists.clear();
+                playlists.addAll(Collections.<YouTubePlaylist>emptyList());
+            }
+        }).forceLoad();
     }
 
     /**
      * Setups list view and adapter for storing YouTube playlists
      */
     public void setupListViewAndAdapter() {
-        playlistsAdapter = new PlaylistsAdapter(getActivity(), playlists);
+        playlistsAdapter = new PlaylistsAdapter(context, playlists);
         playlistsAdapter.setOnItemEventsListener(this);
         playlistsListView.setAdapter(playlistsAdapter);
 
@@ -218,11 +169,7 @@ public class PlaylistsFragment extends BaseFragment implements YouTubeVideosRece
             @Override
             public void onRefresh() {
                 if (networkConf.isNetworkAvailable()) {
-                    if (mChosenAccountName == null) {
-                        chooseAccount();
-                    } else {
-                        youTubeSearch.searchPlaylists();
-                    }
+                    searchPlaylists();
                 } else {
                     networkConf.createNetErrorDialog();
                 }
@@ -239,48 +186,37 @@ public class PlaylistsFragment extends BaseFragment implements YouTubeVideosRece
                     networkConf.createNetErrorDialog();
                     return;
                 }
-                youTubeSearch.acquirePlaylistVideos(playlists.get(pos).getId()); //results are in onVideosReceived callback method
+                acquirePlaylistVideos(playlists.get(pos).getId()); //results are in onVideosReceived callback method
             }
         });
 
     }
 
-    /**
-     * Called when playlist video items are received
-     *
-     * @param youTubeVideos - list to be played in background service
-     */
-    @Override
-    public void onVideosReceived(ArrayList<YouTubeVideo> youTubeVideos) {
-        //if playlist is empty, do not start service
-        if (youTubeVideos.isEmpty()) {
-            getActivity().runOnUiThread(new Runnable() {
-                public void run() {
-                    Toast.makeText(getContext(), "Playlist is empty!", Toast.LENGTH_SHORT).show();
+    private void acquirePlaylistVideos(final String playlistId) {
+        getLoaderManager().restartLoader(3, null, new LoaderManager.LoaderCallbacks<List<YouTubeVideo>>() {
+            @Override
+            public Loader<List<YouTubeVideo>> onCreateLoader(final int id, final Bundle args) {
+                return new YouTubePlaylistVideosLoader(context, playlistId);
+            }
+
+            @Override
+            public void onLoadFinished(Loader<List<YouTubeVideo>> loader, List<YouTubeVideo> data) {
+                if (data == null || data.isEmpty()) {
+                    return;
                 }
-            });
-        } else {
-            Intent serviceIntent = new Intent(getContext(), BackgroundAudioService.class);
-            serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
-            serviceIntent.putExtra(Config.YOUTUBE_TYPE, ItemType.YOUTUBE_MEDIA_TYPE_PLAYLIST);
-            serviceIntent.putExtra(Config.YOUTUBE_TYPE_PLAYLIST, youTubeVideos);
-            getActivity().startService(serviceIntent);
-        }
-    }
-
-    @Override
-    public void onPlaylistNotFound(final String playlistId, int errorCode) {
-        Log.e(TAG, "Error 404. Playlist not found!");
-        getActivity().runOnUiThread(new Runnable() {
-            public void run() {
-                Toast.makeText(getContext(), "Playlist does not exist!", Toast.LENGTH_SHORT).show();
-                removePlaylist(playlistId);
+                itemSelected.onPlaylistSelected(data, 0);
             }
-        });
+
+            @Override
+            public void onLoaderReset(Loader<List<YouTubeVideo>> loader) {
+                playlists.clear();
+                playlists.addAll(Collections.<YouTubePlaylist>emptyList());
+            }
+        }).forceLoad();
     }
 
     /**
-     * Remove playlist with specific ID from DB and list
+     * Remove playlist with specific ID from DB and list TODO
      *
      * @param playlistId
      */
@@ -295,32 +231,6 @@ public class PlaylistsFragment extends BaseFragment implements YouTubeVideosRece
         }
 
         playlistsAdapter.notifyDataSetChanged();
-    }
-
-    /**
-     * Called when playlists are received
-     *
-     * @param youTubePlaylists - list of playlists to be shown in list view
-     */
-    @Override
-    public void onPlaylistsReceived(ArrayList<YouTubePlaylist> youTubePlaylists) {
-
-        //refresh playlists in database
-        YouTubeSqlDb.getInstance().playlists().deleteAll();
-        for (YouTubePlaylist playlist : youTubePlaylists) {
-            YouTubeSqlDb.getInstance().playlists().create(playlist);
-        }
-
-        playlists.clear();
-        playlists.addAll(youTubePlaylists);
-        handler.post(new Runnable() {
-            public void run() {
-                if (playlistsAdapter != null) {
-                    playlistsAdapter.notifyDataSetChanged();
-                    swipeToRefresh.setRefreshing(false);
-                }
-            }
-        });
     }
 
     /**

@@ -15,39 +15,44 @@
  */
 package com.smedic.tubtub.fragments;
 
-import android.content.Intent;
+import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
-import android.widget.Toast;
 
-import com.smedic.tubtub.BackgroundAudioService;
+import com.smedic.tubtub.MainActivity;
 import com.smedic.tubtub.R;
 import com.smedic.tubtub.adapters.VideosAdapter;
 import com.smedic.tubtub.database.YouTubeSqlDb;
-import com.smedic.tubtub.model.ItemType;
+import com.smedic.tubtub.interfaces.OnItemSelected;
 import com.smedic.tubtub.model.YouTubeVideo;
-import com.smedic.tubtub.utils.Config;
 import com.smedic.tubtub.utils.NetworkConf;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by Stevan Medic on 21.3.16..
  */
-public class FavoritesFragment extends BaseFragment {
+public class FavoritesFragment extends BaseFragment implements AdapterView.OnItemClickListener {
     private static final String TAG = "SMEDIC Favorites";
-    private ArrayList<YouTubeVideo> favoriteVideos;
+    private List<YouTubeVideo> favoriteVideos;
 
     private ListView favoritesListView;
     private VideosAdapter videoListAdapter;
     private NetworkConf conf;
+    private Context context;
+    private OnItemSelected itemSelected;
 
     public FavoritesFragment() {
         // Required empty public constructor
+    }
+
+    public static FavoritesFragment newInstance() {
+        return new FavoritesFragment();
     }
 
     @Override
@@ -64,14 +69,13 @@ public class FavoritesFragment extends BaseFragment {
         // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_list, container, false);
         favoritesListView = (ListView) v.findViewById(R.id.fragment_list_items);
-        videoListAdapter = new VideosAdapter(getActivity(), favoriteVideos, false);
+        favoritesListView.setOnItemClickListener(this);
+        videoListAdapter = new VideosAdapter(getActivity(), favoriteVideos);
         videoListAdapter.setOnItemEventsListener(this);
         favoritesListView.setAdapter(videoListAdapter);
 
         //disable swipe to refresh for this tab
         v.findViewById(R.id.swipe_to_refresh).setEnabled(false);
-
-        addListeners();
         return v;
     }
 
@@ -84,43 +88,19 @@ public class FavoritesFragment extends BaseFragment {
     }
 
     @Override
-    public void setUserVisibleHint(boolean visible) {
-        super.setUserVisibleHint(visible);
-
-        if (visible && isResumed()) {
-            //Log.d(TAG, "RecentlyWatchedFragment visible and resumed");
-            //Only manually call onResume if fragment is already visible
-            //Otherwise allow natural fragment lifecycle to call onResume
-            onResume();
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        if (context instanceof MainActivity) {
+            this.context = context;
+            this.itemSelected = (MainActivity) context;
         }
     }
 
-    /**
-     * Adds listener for list item choosing
-     */
-    void addListeners() {
-        favoritesListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-
-            @Override
-            public void onItemClick(AdapterView<?> av, View v, final int pos,
-                                    long id) {
-                if (conf.isNetworkAvailable()) {
-
-                    Toast.makeText(getContext(), "Playing: " + favoriteVideos.get(pos).getTitle(), Toast.LENGTH_SHORT).show();
-                    //add item to recently watched list
-                    YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.RECENTLY_WATCHED).create(favoriteVideos.get(pos));
-
-                    Intent serviceIntent = new Intent(getContext(), BackgroundAudioService.class);
-                    serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
-                    serviceIntent.putExtra(Config.YOUTUBE_TYPE, ItemType.YOUTUBE_MEDIA_TYPE_PLAYLIST);
-                    serviceIntent.putExtra(Config.YOUTUBE_TYPE_PLAYLIST, favoriteVideos);
-                    serviceIntent.putExtra(Config.YOUTUBE_TYPE_PLAYLIST_VIDEO_POS, pos);
-                    getActivity().startService(serviceIntent);
-                } else {
-                    conf.createNetErrorDialog();
-                }
-            }
-        });
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        this.context = null;
+        this.itemSelected = null;
     }
 
     /**
@@ -129,5 +109,35 @@ public class FavoritesFragment extends BaseFragment {
     public void clearFavoritesList() {
         favoriteVideos.clear();
         videoListAdapter.notifyDataSetChanged();
+    }
+
+    public void addToFavoritesList(YouTubeVideo video) {
+        YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.FAVORITE).create(video);
+    }
+
+    public void removeFromFavorites(YouTubeVideo video) {
+        YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.FAVORITE).delete(video.getId());
+        favoriteVideos.remove(video);
+        videoListAdapter.notifyDataSetChanged();
+    }
+
+    /**
+     * Adds listener for list item choosing
+     */
+    @Override
+    public void onItemClick(AdapterView<?> parent, View view, int pos, long id) {
+        YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.RECENTLY_WATCHED)
+                .create(favoriteVideos.get(pos));
+        itemSelected.onPlaylistSelected(favoriteVideos, pos);
+    }
+
+    @Override
+    public void onFavoriteClicked(YouTubeVideo video, boolean isChecked) {
+        super.onFavoriteClicked(video, isChecked);
+        if (isChecked) {
+            addToFavoritesList(video);
+        } else {
+            removeFromFavorites(video);
+        }
     }
 }

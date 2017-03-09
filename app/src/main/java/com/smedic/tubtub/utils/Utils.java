@@ -2,6 +2,7 @@ package com.smedic.tubtub.utils;
 
 import android.util.Log;
 
+import com.google.api.services.youtube.model.SearchResult;
 import com.smedic.tubtub.model.YouTubeVideo;
 
 import java.util.Iterator;
@@ -97,6 +98,33 @@ public class Utils {
         Log.d(TAG, " duration    = " + playlistEntry.getDuration());
         Log.d(TAG, " thumbnail   = " + playlistEntry.getThumbnailURL());
         Log.d(TAG, "\n*************************************************************\n");
+    }
+
+    /**
+     * Concatenates provided ids in order to search for all of them at once and not in many iterations (slower)
+     *
+     * @param searchResults results acquired from search query
+     * @return concatenated ids
+     */
+    public static String concatenateIDs(List<SearchResult> searchResults) {
+
+        StringBuilder contentDetails = new StringBuilder();
+        for (SearchResult result : searchResults) {
+            String id = result.getId().getVideoId();
+            if (id != null) {
+                contentDetails.append(id);
+                contentDetails.append(",");
+            }
+        }
+
+        if (contentDetails.length() == 0) {
+            return null;
+        }
+
+        if (contentDetails.toString().endsWith(",")) {
+            contentDetails.setLength(contentDetails.length() - 1); //remove last ,
+        }
+        return contentDetails.toString();
     }
 
 }

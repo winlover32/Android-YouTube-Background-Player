@@ -1,64 +1,73 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/row_item"
+<android.support.v7.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:cardview="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="120dp"
-    android:background="?android:attr/activatedBackgroundIndicator"
-    android:descendantFocusability="blocksDescendants"
-    android:orientation="horizontal"
-    android:padding="16dp">
+    android:layout_height="wrap_content"
+    android:layout_margin="5dp"
+    android:layout_marginBottom="2dp"
+    cardview:cardCornerRadius="2dp"
+    cardview:cardElevation="2dp"
+    cardview:cardUseCompatPadding="true">
 
-    <ImageView
-        android:id="@+id/video_thumbnail"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_marginEnd="10dp"
-        android:layout_marginRight="10dp"
-        android:layout_weight="30" />
-
-    <RelativeLayout
-        android:id="@+id/infoFrameLayout"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="3dp"
-        android:layout_weight="60"
-        >
-
-        <TextView
-            android:id="@+id/playlist_title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="15sp" />
-
-        <TextView
-            android:id="@+id/videos_number"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/playlist_title"
-            android:maxLines="1"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/privacy"
-            android:layout_below="@+id/videos_number"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|start"
-            android:maxLines="1"
-            android:textSize="12sp"
-            android:textStyle="bold" />
+    <LinearLayout
+        android:id="@+id/row_item"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:background="?android:attr/activatedBackgroundIndicator"
+        android:descendantFocusability="blocksDescendants"
+        android:orientation="horizontal"
+        android:paddingBottom="4dp"
+        android:paddingTop="4dp">
 
         <ImageView
-            android:id="@+id/share_button"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_alignParentBottom="true"
-            android:layout_alignParentEnd="true"
-            android:layout_alignParentRight="true"
-            android:layout_marginEnd="10dp"
-            android:layout_marginRight="10dp"
-            android:background="@drawable/share_button_selector" />
-    </RelativeLayout>
+            android:id="@+id/video_thumbnail"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="40" />
 
-</LinearLayout>
+        <RelativeLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="60">
+
+            <TextView
+                android:id="@+id/playlist_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxLines="2"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/videos_number"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_above="@+id/privacy"
+                android:maxLines="1"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/privacy"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:layout_alignParentLeft="true"
+                android:layout_alignParentStart="true"
+                android:maxLines="1"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:id="@+id/share_button"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_alignParentBottom="true"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentRight="true"
+                android:layout_marginEnd="15dp"
+                android:layout_marginRight="15dp"
+                android:background="@drawable/share_button_selector" />
+
+        </RelativeLayout>
+    </LinearLayout>
+</android.support.v7.widget.CardView>

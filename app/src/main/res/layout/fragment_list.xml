@@ -11,8 +11,7 @@
         <ListView
             android:id="@+id/fragment_list_items"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:dividerHeight="3dp" />
+            android:layout_height="wrap_content" />
     </android.support.v4.widget.SwipeRefreshLayout>
 
     <ProgressBar

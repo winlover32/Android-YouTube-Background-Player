@@ -4,7 +4,8 @@ package com.smedic.tubtub.adapters;
  * Created by smedic on 6.2.17..
  */
 
-import android.app.Activity;
+import android.content.Context;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -19,16 +20,19 @@ import com.squareup.picasso.Picasso;
 
 import java.util.List;
 
+import static com.smedic.tubtub.R.id.privacy;
+
 /**
  * Custom array adapter class
  */
 public class PlaylistsAdapter extends ArrayAdapter<YouTubePlaylist> {
 
-    private Activity context;
+    private Context context;
     private List<YouTubePlaylist> playlists;
     private ItemEventsListener itemEventsListener;
+    private ViewHolder holder;
 
-    public PlaylistsAdapter(Activity context, List<YouTubePlaylist> playlists) {
+    public PlaylistsAdapter(Context context, List<YouTubePlaylist> playlists) {
         super(context, R.layout.video_item, playlists);
         this.context = context;
         this.playlists = playlists;
@@ -37,25 +41,31 @@ public class PlaylistsAdapter extends ArrayAdapter<YouTubePlaylist> {
     @Override
     public View getView(final int position, View convertView, ViewGroup parent) {
 
+        ViewHolder holder;
         if (convertView == null) {
-            convertView = context.getLayoutInflater().inflate(R.layout.playlist_item, parent, false);
+            holder = new ViewHolder();
+            LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+            convertView = inflater.inflate(R.layout.playlist_item, parent, false);
+            holder.thumbnail = (ImageView) convertView.findViewById(R.id.video_thumbnail);
+            holder.title = (TextView) convertView.findViewById(R.id.playlist_title);
+            holder.videosNumber = (TextView) convertView.findViewById(R.id.videos_number);
+            holder.privacy = (TextView) convertView.findViewById(privacy);
+            holder.shareButton = (ImageView) convertView.findViewById(R.id.share_button);
+            convertView.setTag(holder);
+        } else {
+            holder = (ViewHolder) convertView.getTag();
         }
-        ImageView thumbnail = (ImageView) convertView.findViewById(R.id.video_thumbnail);
-        TextView title = (TextView) convertView.findViewById(R.id.playlist_title);
-        TextView videosNumber = (TextView) convertView.findViewById(R.id.videos_number);
-        TextView privacy = (TextView) convertView.findViewById(R.id.privacy);
-        ImageView shareButton = (ImageView) convertView.findViewById(R.id.share_button);
 
         final YouTubePlaylist searchResult = playlists.get(position);
 
-        Picasso.with(getContext()).load(searchResult.getThumbnailURL()).into(thumbnail);
-        title.setText(searchResult.getTitle());
+        Picasso.with(context).load(searchResult.getThumbnailURL()).into(holder.thumbnail);
+        holder.title.setText(searchResult.getTitle());
         String videosNumberText = context.getString(R.string.number_of_videos) + String.valueOf(searchResult.getNumberOfVideos());
-        videosNumber.setText(videosNumberText);
+        holder.videosNumber.setText(videosNumberText);
         String status = context.getString(R.string.status) + searchResult.getStatus();
-        privacy.setText(status);
+        holder.privacy.setText(status);
 
-        shareButton.setOnClickListener(new View.OnClickListener() {
+        holder.shareButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if (itemEventsListener != null) {
@@ -68,18 +78,15 @@ public class PlaylistsAdapter extends ArrayAdapter<YouTubePlaylist> {
         return convertView;
     }
 
+    private static class ViewHolder {
+        ImageView thumbnail;
+        TextView title;
+        TextView videosNumber;
+        TextView privacy;
+        ImageView shareButton;
+    }
+
     public void setOnItemEventsListener(ItemEventsListener listener) {
         itemEventsListener = listener;
-    }
-
-    @Override
-    public long getItemId(int i) {
-        return getItem(i).hashCode();
-    }
-
-
-    @Override
-    public boolean hasStableIds() {
-        return true;
     }
 }
