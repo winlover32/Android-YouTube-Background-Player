@@ -49,7 +49,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.Toast;
 
 import com.flask.colorpicker.ColorPickerView;
 import com.flask.colorpicker.OnColorSelectedListener;
@@ -268,7 +267,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
     @Override
     public void onPermissionsGranted(int requestCode, List<String> perms) {
-        //Log.d(TAG, "onPermissionsGranted:");
+        Log.d(TAG, "onPermissionsGranted:");
     }
 
     @Override
@@ -282,9 +281,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             networkConf.createNetErrorDialog();
             return;
         }
-
-        Toast.makeText(this, "Video started: " + video.getTitle(), Toast.LENGTH_SHORT).show();
-
+        Log.d(TAG, "onVideoSelected: ");
         Intent serviceIntent = new Intent(this, BackgroundAudioService.class);
         serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
         serviceIntent.putExtra(Config.YOUTUBE_TYPE, ItemType.YOUTUBE_MEDIA_TYPE_VIDEO);
@@ -298,10 +295,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             networkConf.createNetErrorDialog();
             return;
         }
-
-        Toast.makeText(this, "Playlist started: " + playlist.get(position).getTitle(),
-                Toast.LENGTH_SHORT).show();
-
+        Log.d(TAG, "onPlaylistSelected: ");
         Intent serviceIntent = new Intent(this, BackgroundAudioService.class);
         serviceIntent.setAction(BackgroundAudioService.ACTION_PLAY);
         serviceIntent.putExtra(Config.YOUTUBE_TYPE, ItemType.YOUTUBE_MEDIA_TYPE_PLAYLIST);
@@ -313,10 +307,8 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     @Override
     public void onFavoritesSelected(YouTubeVideo video, boolean isChecked) {
         if (isChecked) {
-            Log.d(TAG, "onFavoritesSelected: 1");
             favoritesFragment.addToFavoritesList(video);
         } else {
-            Log.d(TAG, "onFavoritesSelected: 2");
             favoritesFragment.removeFromFavorites(video);
         }
     }

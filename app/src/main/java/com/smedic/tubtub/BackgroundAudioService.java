@@ -35,6 +35,7 @@ import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.util.SparseArray;
+import android.widget.Toast;
 
 import com.smedic.tubtub.model.ItemType;
 import com.smedic.tubtub.model.YouTubeVideo;
@@ -46,7 +47,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.ListIterator;
 
-import at.huber.youtubeExtractor.YouTubeUriExtractor;
+import at.huber.youtubeExtractor.VideoMeta;
+import at.huber.youtubeExtractor.YouTubeExtractor;
 import at.huber.youtubeExtractor.YtFile;
 
 /**
@@ -104,17 +106,17 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
         return super.onStartCommand(intent, flags, startId);
     }
 
-    private void initPhoneCallListener(){
+    private void initPhoneCallListener() {
         PhoneStateListener phoneStateListener = new PhoneStateListener() {
             @Override
             public void onCallStateChanged(int state, String incomingNumber) {
                 if (state == TelephonyManager.CALL_STATE_RINGING) {
                     //Incoming call: Pause music
                     pauseVideo();
-                } else if(state == TelephonyManager.CALL_STATE_IDLE) {
+                } else if (state == TelephonyManager.CALL_STATE_IDLE) {
                     //Not in call: Play music
                     resumeVideo();
-                } else if(state == TelephonyManager.CALL_STATE_OFFHOOK) {
+                } else if (state == TelephonyManager.CALL_STATE_OFFHOOK) {
                     //A call is dialing, active or on hold
                 }
                 super.onCallStateChanged(state, incomingNumber);
@@ -122,7 +124,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
         };
 
         TelephonyManager mgr = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
-        if(mgr != null) {
+        if (mgr != null) {
             mgr.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
         }
     }
@@ -157,8 +159,8 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
      */
     private void handleMedia(Intent intent) {
         ItemType intentMediaType = ItemType.YOUTUBE_MEDIA_NONE;
-        if(intent.getSerializableExtra(Config.YOUTUBE_TYPE) != null) {
-            intentMediaType= (ItemType) intent.getSerializableExtra(Config.YOUTUBE_TYPE);
+        if (intent.getSerializableExtra(Config.YOUTUBE_TYPE) != null) {
+            intentMediaType = (ItemType) intent.getSerializableExtra(Config.YOUTUBE_TYPE);
         }
         switch (intentMediaType) {
             case YOUTUBE_MEDIA_NONE: //video is paused,so no new playback requests should be processed
@@ -479,29 +481,33 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
      * Extracts link from youtube video ID, so mediaPlayer can play it
      */
     private void extractUrlAndPlay() {
-
-        String youtubeLink = "http://youtube.com/watch?v=" + videoItem.getId();
-        YouTubeUriExtractor ytEx = new YouTubeUriExtractor(this) {
+        String youtubeLink = Config.YOUTUBE_BASE_URL + videoItem.getId();
+        new YouTubeExtractor(this) {
             @Override
-            public void onUrisAvailable(String videoId, String videoTitle, SparseArray<YtFile> ytFiles) {
-                if (ytFiles != null) {
-                    YtFile ytFile = getBestStream(ytFiles);
-                    try {
-                        Log.d(TAG, "Start playback - video id: " + videoItem.getId());
-                        if (mMediaPlayer != null) {
-                            mMediaPlayer.reset();
-                            mMediaPlayer.setDataSource(ytFile.getUrl());
-                            mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-                            mMediaPlayer.prepare();
-                            mMediaPlayer.start();
-                        }
-                    } catch (IOException io) {
-                        io.printStackTrace();
+            protected void onExtractionComplete(SparseArray<YtFile> ytFiles, VideoMeta videoMeta) {
+                if (ytFiles == null) {
+                    // Something went wrong we got no urls. Always check this.
+                    Toast.makeText(YTApplication.getAppContext(), R.string.failed_playback,
+                            Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                YtFile ytFile = getBestStream(ytFiles);
+                try {
+                    if (mMediaPlayer != null) {
+                        mMediaPlayer.reset();
+                        mMediaPlayer.setDataSource(ytFile.getUrl());
+                        mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+                        mMediaPlayer.prepare();
+                        mMediaPlayer.start();
+
+                        Toast.makeText(YTApplication.getAppContext(), videoMeta.getTitle(),
+                                Toast.LENGTH_SHORT).show();
                     }
+                } catch (IOException io) {
+                    io.printStackTrace();
                 }
             }
-        };
-        ytEx.execute(youtubeLink);
+        }.execute(youtubeLink);
     }
 
     @Override
