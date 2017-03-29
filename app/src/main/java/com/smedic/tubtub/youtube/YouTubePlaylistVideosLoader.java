@@ -49,6 +49,7 @@ public class YouTubePlaylistVideosLoader extends AsyncTaskLoader<List<YouTubeVid
         try {
             playlistItemRequest = youtube.playlistItems().list("id,contentDetails,snippet");
             playlistItemRequest.setPlaylistId(playlistId);
+            playlistItemRequest.setKey(Config.YOUTUBE_API_KEY);
             playlistItemRequest.setMaxResults(Config.NUMBER_OF_VIDEOS_RETURNED);
             playlistItemRequest.setFields("items(contentDetails/videoId,snippet/title," +
                     "snippet/thumbnails/default/url),nextPageToken");
