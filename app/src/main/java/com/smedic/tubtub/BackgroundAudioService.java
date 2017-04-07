@@ -37,6 +37,9 @@ import android.util.Log;
 import android.util.SparseArray;
 import android.widget.Toast;
 
+import com.facebook.network.connectionclass.ConnectionClassManager;
+import com.facebook.network.connectionclass.ConnectionQuality;
+import com.facebook.network.connectionclass.DeviceBandwidthSampler;
 import com.smedic.tubtub.model.ItemType;
 import com.smedic.tubtub.model.YouTubeVideo;
 import com.smedic.tubtub.utils.Config;
@@ -80,6 +83,9 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
 
     private NotificationCompat.Builder builder = null;
 
+    private DeviceBandwidthSampler deviceBandwidthSampler;
+    private ConnectionQuality connectionQuality = ConnectionQuality.MODERATE;
+
     @Override
     public IBinder onBind(Intent intent) {
         return null;
@@ -94,6 +100,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
         mMediaPlayer.setOnPreparedListener(this);
         initMediaSessions();
         initPhoneCallListener();
+        deviceBandwidthSampler = DeviceBandwidthSampler.getInstance();
     }
 
     @Override
@@ -111,6 +118,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
                     pauseVideo();
                 } else if (state == TelephonyManager.CALL_STATE_IDLE) {
                     //Not in call: Play music
+                    Log.d(TAG, "onCallStateChanged: ");
                     resumeVideo();
                 } else if (state == TelephonyManager.CALL_STATE_OFFHOOK) {
                     //A call is dialing, active or on hold
@@ -123,6 +131,11 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
         if (mgr != null) {
             mgr.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
         }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
     }
 
     /**
@@ -417,7 +430,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
      * Resumes video
      */
     private void resumeVideo() {
-        if (mMediaPlayer != null) {
+        if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
             mMediaPlayer.start();
         }
     }
@@ -449,19 +462,44 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
 
     /**
      * Get the best available audio stream
+     * <p>
+     * Itags:
+     * 141 - mp4a - stereo, 44.1 KHz 256 Kbps
+     * 251 - webm - stereo, 48 KHz 160 Kbps
+     * 140 - mp4a - stereo, 44.1 KHz 128 Kbps
+     * 17 - mp4 - stereo, 44.1 KHz 96-100 Kbps
      *
      * @param ytFiles Array of available streams
      * @return Audio stream with highest bitrate
      */
     private YtFile getBestStream(SparseArray<YtFile> ytFiles) {
-        if (ytFiles.get(141) != null) {
-            return ytFiles.get(141); //mp4a - stereo, 44.1 KHz 256 Kbps
-        } else if (ytFiles.get(251) != null) {
-            return ytFiles.get(251); //webm - stereo, 48 KHz 160 Kbps
-        } else if (ytFiles.get(140) != null) {
-            return ytFiles.get(140);  //mp4a - stereo, 44.1 KHz 128 Kbps
+
+        connectionQuality = ConnectionClassManager.getInstance().getCurrentBandwidthQuality();
+        int[] itags = new int[]{251, 141, 140, 17};
+
+        if (connectionQuality != null && connectionQuality != ConnectionQuality.UNKNOWN) {
+            switch (connectionQuality) {
+                case POOR:
+                    itags = new int[]{17, 140, 251, 141};
+                    break;
+                case MODERATE:
+                    itags = new int[]{251, 141, 140, 17};
+                    break;
+                case GOOD:
+                case EXCELLENT:
+                    itags = new int[]{141, 251, 140, 17};
+                    break;
+            }
         }
-        return ytFiles.get(17); //mp4 - stereo, 44.1 KHz 96-100 Kbps
+
+        if (ytFiles.get(itags[0]) != null) {
+            return ytFiles.get(itags[0]);
+        } else if (ytFiles.get(itags[1]) != null) {
+            return ytFiles.get(itags[1]);
+        } else if (ytFiles.get(itags[2]) != null) {
+            return ytFiles.get(itags[2]);
+        }
+        return ytFiles.get(itags[3]);
     }
 
     /**
@@ -469,7 +507,8 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
      */
     private void extractUrlAndPlay() {
         String youtubeLink = Config.YOUTUBE_BASE_URL + videoItem.getId();
-        Log.d(TAG, "extractUrlAndPlay: " + videoItem.getId());
+        deviceBandwidthSampler.startSampling();
+
         new YouTubeExtractor(this) {
             @Override
             protected void onExtractionComplete(SparseArray<YtFile> ytFiles, VideoMeta videoMeta) {
@@ -479,6 +518,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
                             Toast.LENGTH_SHORT).show();
                     return;
                 }
+                deviceBandwidthSampler.stopSampling();
                 YtFile ytFile = getBestStream(ytFiles);
                 try {
                     if (mMediaPlayer != null) {
@@ -488,8 +528,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
                         mMediaPlayer.prepare();
                         mMediaPlayer.start();
 
-                        Toast.makeText(YTApplication.getAppContext(), videoItem.getTitle(),
-                                Toast.LENGTH_SHORT).show();
+                        Toast.makeText(YTApplication.getAppContext(), videoItem.getTitle(), Toast.LENGTH_SHORT).show();
                     }
                 } catch (IOException io) {
                     io.printStackTrace();
