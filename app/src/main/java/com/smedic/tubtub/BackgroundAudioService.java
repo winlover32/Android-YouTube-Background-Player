@@ -45,7 +45,6 @@ import com.squareup.picasso.Target;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.ListIterator;
 
 import at.huber.youtubeExtractor.VideoMeta;
 import at.huber.youtubeExtractor.YouTubeExtractor;
@@ -75,14 +74,11 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
     private YouTubeVideo videoItem;
 
     private boolean isStarting = false;
+    private int currentSongIndex = 0;
 
     private ArrayList<YouTubeVideo> youTubeVideos;
-    private ListIterator<YouTubeVideo> iterator;
 
     private NotificationCompat.Builder builder = null;
-
-    private boolean nextWasCalled = false;
-    private boolean previousWasCalled = false;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -177,9 +173,9 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
                 mediaType = ItemType.YOUTUBE_MEDIA_TYPE_PLAYLIST;
                 youTubeVideos = (ArrayList<YouTubeVideo>) intent.getSerializableExtra(Config.YOUTUBE_TYPE_PLAYLIST);
                 int startPosition = intent.getIntExtra(Config.YOUTUBE_TYPE_PLAYLIST_VIDEO_POS, 0);
-
-                iterator = youTubeVideos.listIterator(startPosition);
-                playNext();
+                videoItem = youTubeVideos.get(startPosition);
+                currentSongIndex = startPosition;
+                playVideo();
                 break;
             default:
                 Log.d(TAG, "Unknown command");
@@ -371,17 +367,13 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
             return;
         }
 
-        if (previousWasCalled) {
-            previousWasCalled = false;
-            iterator.next();
+        if (youTubeVideos.size() > currentSongIndex + 1) {
+            currentSongIndex++;
+        } else { //play 1st song
+            currentSongIndex = 0;
         }
 
-        if (!iterator.hasNext()) {
-            iterator = youTubeVideos.listIterator();
-        }
-
-        videoItem = iterator.next();
-        nextWasCalled = true;
+        videoItem = youTubeVideos.get(currentSongIndex);
         playVideo();
     }
 
@@ -395,17 +387,12 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
             return;
         }
 
-        if (nextWasCalled) {
-            iterator.previous();
-            nextWasCalled = false;
+        if (currentSongIndex - 1 >= 0) {
+            currentSongIndex--;
+        } else { //play last song
+            currentSongIndex = youTubeVideos.size() - 1;
         }
-
-        if (!iterator.hasPrevious()) {
-            iterator = youTubeVideos.listIterator(youTubeVideos.size());
-        }
-
-        videoItem = iterator.previous();
-        previousWasCalled = true;
+        videoItem = youTubeVideos.get(youTubeVideos.size() - 1);
         playVideo();
     }
 
@@ -482,6 +469,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
      */
     private void extractUrlAndPlay() {
         String youtubeLink = Config.YOUTUBE_BASE_URL + videoItem.getId();
+        Log.d(TAG, "extractUrlAndPlay: " + videoItem.getId());
         new YouTubeExtractor(this) {
             @Override
             protected void onExtractionComplete(SparseArray<YtFile> ytFiles, VideoMeta videoMeta) {
@@ -500,7 +488,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnCom
                         mMediaPlayer.prepare();
                         mMediaPlayer.start();
 
-                        Toast.makeText(YTApplication.getAppContext(), videoMeta.getTitle(),
+                        Toast.makeText(YTApplication.getAppContext(), videoItem.getTitle(),
                                 Toast.LENGTH_SHORT).show();
                     }
                 } catch (IOException io) {

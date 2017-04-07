@@ -17,6 +17,7 @@
         android:descendantFocusability="blocksDescendants"
         android:orientation="horizontal"
         android:paddingBottom="4dp"
+        android:weightSum="100"
         android:paddingTop="4dp">
 
         <ImageView
