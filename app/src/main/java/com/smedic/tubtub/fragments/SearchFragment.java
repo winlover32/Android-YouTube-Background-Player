@@ -163,6 +163,7 @@ public class SearchFragment extends BaseFragment implements ItemEventsListener<Y
     @Override
     public void onItemClick(YouTubeVideo video) {
         YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.RECENTLY_WATCHED).create(video);
-        itemSelected.onVideoSelected(video);
+        //itemSelected.onVideoSelected(video);
+        itemSelected.onPlaylistSelected(searchResultsList, searchResultsList.indexOf(video));
     }
 }

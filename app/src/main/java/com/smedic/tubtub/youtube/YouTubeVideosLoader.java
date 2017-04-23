@@ -69,14 +69,18 @@ public class YouTubeVideosLoader extends AsyncTaskLoader<List<YouTubeVideo>> {
                 item.setId(searchResults.get(i).getId().getVideoId());
                 //video info
                 if (videoResults.get(i) != null) {
-                    BigInteger viewsNumber = videoResults.get(i).getStatistics().getViewCount();
-                    String viewsFormatted = NumberFormat.getIntegerInstance().format(viewsNumber) + " views";
-                    item.setViewCount(viewsFormatted);
-                    String isoTime = videoResults.get(i).getContentDetails().getDuration();
-                    String time = Utils.convertISO8601DurationToNormalTime(isoTime);
-                    item.setDuration(time);
+                    if (videoResults.get(i).getStatistics() != null) {
+                        BigInteger viewsNumber = videoResults.get(i).getStatistics().getViewCount();
+                        String viewsFormatted = NumberFormat.getIntegerInstance().format(viewsNumber) + " views";
+                        item.setViewCount(viewsFormatted);
+                    }
+                    if (videoResults.get(i).getContentDetails() != null) {
+                        String isoTime = videoResults.get(i).getContentDetails().getDuration();
+                        String time = Utils.convertISO8601DurationToNormalTime(isoTime);
+                        item.setDuration(time);
+                    }
                 } else {
-                    item.setDuration("NA");
+                    item.setDuration("");
                 }
 
                 //add to the list
