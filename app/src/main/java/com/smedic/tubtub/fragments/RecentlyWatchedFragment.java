@@ -22,6 +22,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.RelativeLayout;
 
 import com.smedic.tubtub.MainActivity;
 import com.smedic.tubtub.R;
@@ -50,6 +51,7 @@ public class RecentlyWatchedFragment extends BaseFragment implements
     private OnItemSelected itemSelected;
     private OnFavoritesSelected onFavoritesSelected;
     private Context context;
+    private RelativeLayout nothingFoundMessageHolder;
 
     public RecentlyWatchedFragment() {
         // Required empty public constructor
@@ -76,9 +78,8 @@ public class RecentlyWatchedFragment extends BaseFragment implements
         videoListAdapter.setOnItemEventsListener(this);
         recentlyPlayedListView.setAdapter(videoListAdapter);
 
+        nothingFoundMessageHolder = (RelativeLayout) v.findViewById(R.id.nothing_found_holder);
         //disable swipe to refresh for this tab
-        v.findViewById(R.id.swipe_to_refresh).setEnabled(false);
-
         return v;
     }
 
@@ -87,7 +88,7 @@ public class RecentlyWatchedFragment extends BaseFragment implements
         super.onResume();
         recentlyPlayedVideos.clear();
         recentlyPlayedVideos.addAll(YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.RECENTLY_WATCHED).readAll());
-        videoListAdapter.notifyDataSetChanged();
+        updateList();
     }
 
     @Override
@@ -113,7 +114,7 @@ public class RecentlyWatchedFragment extends BaseFragment implements
      */
     public void clearRecentlyPlayedList() {
         recentlyPlayedVideos.clear();
-        videoListAdapter.notifyDataSetChanged();
+        updateList();
     }
 
     @Override
@@ -129,5 +130,17 @@ public class RecentlyWatchedFragment extends BaseFragment implements
     @Override
     public void onItemClick(YouTubeVideo video) {
         itemSelected.onPlaylistSelected(recentlyPlayedVideos, recentlyPlayedVideos.indexOf(video));
+    }
+
+    @Override
+    public void updateList() {
+        videoListAdapter.notifyDataSetChanged();
+        if (videoListAdapter.getItemCount() > 0) {
+            nothingFoundMessageHolder.setVisibility(View.GONE);
+            recentlyPlayedListView.setVisibility(View.VISIBLE);
+        } else {
+            nothingFoundMessageHolder.setVisibility(View.VISIBLE);
+            recentlyPlayedListView.setVisibility(View.GONE);
+        }
     }
 }

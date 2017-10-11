@@ -19,9 +19,11 @@ import android.content.Context;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.RelativeLayout;
 
 import com.smedic.tubtub.MainActivity;
 import com.smedic.tubtub.R;
@@ -47,6 +49,7 @@ public class FavoritesFragment extends BaseFragment implements ItemEventsListene
     private VideosAdapter videoListAdapter;
     private OnItemSelected itemSelected;
     private Context context;
+    private RelativeLayout nothingFoundMessageHolder;
 
     public FavoritesFragment() {
         // Required empty public constructor
@@ -74,8 +77,8 @@ public class FavoritesFragment extends BaseFragment implements ItemEventsListene
         videoListAdapter.setOnItemEventsListener(this);
         favoritesListView.setAdapter(videoListAdapter);
 
-        //disable swipe to refresh for this tab
-        v.findViewById(R.id.swipe_to_refresh).setEnabled(false);
+        nothingFoundMessageHolder = (RelativeLayout) v.findViewById(R.id.nothing_found_holder);
+
         return v;
     }
 
@@ -84,7 +87,7 @@ public class FavoritesFragment extends BaseFragment implements ItemEventsListene
         super.onResume();
         favoriteVideos.clear();
         favoriteVideos.addAll(YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.FAVORITE).readAll());
-        videoListAdapter.notifyDataSetChanged();
+        updateList();
     }
 
     @Override
@@ -108,7 +111,7 @@ public class FavoritesFragment extends BaseFragment implements ItemEventsListene
      */
     public void clearFavoritesList() {
         favoriteVideos.clear();
-        videoListAdapter.notifyDataSetChanged();
+        updateList();
     }
 
     public void addToFavoritesList(YouTubeVideo video) {
@@ -118,7 +121,7 @@ public class FavoritesFragment extends BaseFragment implements ItemEventsListene
     public void removeFromFavorites(YouTubeVideo video) {
         YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.FAVORITE).delete(video.getId());
         favoriteVideos.remove(video);
-        videoListAdapter.notifyDataSetChanged();
+        updateList();
     }
 
     @Override
@@ -139,5 +142,20 @@ public class FavoritesFragment extends BaseFragment implements ItemEventsListene
     public void onItemClick(YouTubeVideo video) {
         YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.RECENTLY_WATCHED).create(video);
         itemSelected.onPlaylistSelected(favoriteVideos, favoriteVideos.indexOf(video));
+    }
+
+    @Override
+    public void updateList() {
+        Log.d(TAG, "updateList: ");
+        videoListAdapter.notifyDataSetChanged();
+        if (videoListAdapter.getItemCount() > 0) {
+            Log.d(TAG, "updateList: show");
+            nothingFoundMessageHolder.setVisibility(View.GONE);
+            favoritesListView.setVisibility(View.VISIBLE);
+        } else {
+            Log.d(TAG, "updateList: hide");
+            nothingFoundMessageHolder.setVisibility(View.VISIBLE);
+            favoritesListView.setVisibility(View.GONE);
+        }
     }
 }

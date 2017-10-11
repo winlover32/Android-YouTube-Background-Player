@@ -25,6 +25,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 
 import com.smedic.tubtub.MainActivity;
 import com.smedic.tubtub.R;
@@ -57,6 +58,7 @@ public class SearchFragment extends BaseFragment implements ItemEventsListener<Y
     private Context context;
     private OnItemSelected itemSelected;
     private OnFavoritesSelected onFavoritesSelected;
+    private RelativeLayout nothingFoundMessageHolder;
 
     public SearchFragment() {
         // Required empty public constructor
@@ -85,9 +87,8 @@ public class SearchFragment extends BaseFragment implements ItemEventsListener<Y
         videoListAdapter = new VideosAdapter(context, searchResultsList);
         videoListAdapter.setOnItemEventsListener(this);
         videosFoundListView.setAdapter(videoListAdapter);
-
+        nothingFoundMessageHolder = (RelativeLayout) v.findViewById(R.id.nothing_found_holder);
         //disable swipe to refresh for this tab
-        v.findViewById(R.id.swipe_to_refresh).setEnabled(false);
         return v;
     }
 
@@ -137,15 +138,15 @@ public class SearchFragment extends BaseFragment implements ItemEventsListener<Y
                 videosFoundListView.smoothScrollToPosition(0);
                 searchResultsList.clear();
                 searchResultsList.addAll(data);
-                videoListAdapter.notifyDataSetChanged();
                 loadingProgressBar.setVisibility(View.INVISIBLE);
+                updateList();
             }
 
             @Override
             public void onLoaderReset(Loader<List<YouTubeVideo>> loader) {
                 searchResultsList.clear();
                 searchResultsList.addAll(Collections.<YouTubeVideo>emptyList());
-                videoListAdapter.notifyDataSetChanged();
+                updateList();
             }
         }).forceLoad();
     }
@@ -165,5 +166,17 @@ public class SearchFragment extends BaseFragment implements ItemEventsListener<Y
         YouTubeSqlDb.getInstance().videos(YouTubeSqlDb.VIDEOS_TYPE.RECENTLY_WATCHED).create(video);
         //itemSelected.onVideoSelected(video);
         itemSelected.onPlaylistSelected(searchResultsList, searchResultsList.indexOf(video));
+    }
+
+    @Override
+    public void updateList() {
+        videoListAdapter.notifyDataSetChanged();
+        if (videoListAdapter.getItemCount() > 0) {
+            nothingFoundMessageHolder.setVisibility(View.GONE);
+            videosFoundListView.setVisibility(View.VISIBLE);
+        } else {
+            nothingFoundMessageHolder.setVisibility(View.VISIBLE);
+            videosFoundListView.setVisibility(View.GONE);
+        }
     }
 }

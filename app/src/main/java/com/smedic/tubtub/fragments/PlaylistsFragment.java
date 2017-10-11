@@ -19,13 +19,13 @@ import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
-import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.RelativeLayout;
 
 import com.smedic.tubtub.MainActivity;
 import com.smedic.tubtub.R;
@@ -55,9 +55,10 @@ public class PlaylistsFragment extends BaseFragment implements
     private ArrayList<YouTubePlaylist> playlists;
     private RecyclerView playlistsListView;
     private PlaylistsAdapter playlistsAdapter;
-    private SwipeRefreshLayout swipeToRefresh;
+    //private SwipeRefreshLayout swipeToRefresh;
     private Context context;
     private OnItemSelected itemSelected;
+    private RelativeLayout nothingFoundMessageHolder;
 
     public PlaylistsFragment() {
         // Required empty public constructor
@@ -80,19 +81,18 @@ public class PlaylistsFragment extends BaseFragment implements
         /* Setup the ListView */
         playlistsListView = (RecyclerView) v.findViewById(R.id.fragment_list_items);
         playlistsListView.setLayoutManager(new LinearLayoutManager(context));
-
-        swipeToRefresh = (SwipeRefreshLayout) v.findViewById(R.id.swipe_to_refresh);
+        nothingFoundMessageHolder = (RelativeLayout) v.findViewById(R.id.nothing_found_holder);
 
         playlistsAdapter = new PlaylistsAdapter(context, playlists);
         playlistsAdapter.setOnItemEventsListener(this);
         playlistsListView.setAdapter(playlistsAdapter);
 
-        swipeToRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                searchPlaylists();
-            }
-        });
+//        swipeToRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+//            @Override
+//            public void onRefresh() {
+//                searchPlaylists();
+//            }
+//        });
         return v;
     }
 
@@ -117,7 +117,7 @@ public class PlaylistsFragment extends BaseFragment implements
         super.onResume();
         playlists.clear();
         playlists.addAll(YouTubeSqlDb.getInstance().playlists().readAll());
-        playlistsAdapter.notifyDataSetChanged();
+        updateList();
     }
 
     public void searchPlaylists() {
@@ -130,7 +130,7 @@ public class PlaylistsFragment extends BaseFragment implements
             @Override
             public void onLoadFinished(Loader<List<YouTubePlaylist>> loader, List<YouTubePlaylist> data) {
                 if (data == null) {
-                    swipeToRefresh.setRefreshing(false);
+                    //swipeToRefresh.setRefreshing(false);
                     return;
                 }
                 YouTubeSqlDb.getInstance().playlists().deleteAll();
@@ -142,20 +142,15 @@ public class PlaylistsFragment extends BaseFragment implements
 
                 playlists.clear();
                 playlists.addAll(data);
-                playlistsAdapter.notifyDataSetChanged();
-                swipeToRefresh.setRefreshing(false);
-
-                for (YouTubePlaylist playlist : playlists) {
-                    Log.d(TAG, "onLoadFinished: >>> " + playlist.getTitle());
-                }
-
+                //swipeToRefresh.setRefreshing(false);
+                updateList();
             }
 
             @Override
             public void onLoaderReset(Loader<List<YouTubePlaylist>> loader) {
                 playlists.clear();
                 playlists.addAll(Collections.<YouTubePlaylist>emptyList());
-                playlistsAdapter.notifyDataSetChanged();
+                updateList();
             }
         }).forceLoad();
     }
@@ -197,8 +192,7 @@ public class PlaylistsFragment extends BaseFragment implements
                 break;
             }
         }
-
-        playlistsAdapter.notifyDataSetChanged();
+        updateList();
     }
 
     /**
@@ -233,5 +227,17 @@ public class PlaylistsFragment extends BaseFragment implements
     public void onItemClick(YouTubePlaylist youTubePlaylist) {
         //results are in onVideosReceived callback method
         acquirePlaylistVideos(youTubePlaylist.getId());
+    }
+
+    @Override
+    public void updateList() {
+        playlistsAdapter.notifyDataSetChanged();
+        if (playlistsAdapter.getItemCount() > 0) {
+            nothingFoundMessageHolder.setVisibility(View.GONE);
+            playlistsListView.setVisibility(View.VISIBLE);
+        } else {
+            nothingFoundMessageHolder.setVisibility(View.VISIBLE);
+            playlistsListView.setVisibility(View.GONE);
+        }
     }
 }

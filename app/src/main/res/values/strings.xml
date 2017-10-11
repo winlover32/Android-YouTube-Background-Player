@@ -35,4 +35,5 @@
     <string name="choose_colors">Choose background and text color</string>
     <string name="cancel">cancel</string>
     <string name="failed_playback">Playback failed!</string>
+    <string name="list_empty">List is empty!</string>
 </resources>

@@ -7,7 +7,7 @@ import android.support.v4.app.Fragment;
  * Created by smedic on 9.2.17..
  */
 
-public class BaseFragment extends Fragment {
+public abstract class BaseFragment extends Fragment {
 
     protected void share(String url) {
         Intent intent = new Intent(Intent.ACTION_SEND);
@@ -26,5 +26,7 @@ public class BaseFragment extends Fragment {
             onResume();
         }
     }
+
+    protected abstract void updateList();
 
 }

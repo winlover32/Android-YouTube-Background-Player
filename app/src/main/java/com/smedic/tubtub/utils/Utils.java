@@ -65,6 +65,7 @@ public class Utils {
 
     /**
      * Prints videos nicely formatted
+     *
      * @param videos
      */
     public static void prettyPrintVideos(List<YouTubeVideo> videos) {
@@ -86,17 +87,18 @@ public class Utils {
 
     /**
      * Prints video nicely formatted
-     * @param playlistEntry
+     *
+     * @param videoEntry
      */
-    public static void prettyPrintVideoItem(YouTubeVideo playlistEntry) {
+    public static void prettyPrintVideoItem(YouTubeVideo videoEntry) {
         Log.d(TAG, "*************************************************************");
         Log.d(TAG, "\t\tItem:");
         Log.d(TAG, "*************************************************************");
 
-        Log.d(TAG, " video name  = " + playlistEntry.getTitle());
-        Log.d(TAG, " video id    = " + playlistEntry.getId());
-        Log.d(TAG, " duration    = " + playlistEntry.getDuration());
-        Log.d(TAG, " thumbnail   = " + playlistEntry.getThumbnailURL());
+        Log.d(TAG, " video name  = " + videoEntry.getTitle());
+        Log.d(TAG, " video id    = " + videoEntry.getId());
+        Log.d(TAG, " duration    = " + videoEntry.getDuration());
+        Log.d(TAG, " thumbnail   = " + videoEntry.getThumbnailURL());
         Log.d(TAG, "\n*************************************************************\n");
     }
 
