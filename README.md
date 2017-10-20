@@ -9,6 +9,4 @@ Player provides mechanisms for searching content, saving it in favorites list, a
 This features violates Google YouTube's terms of service and cannot be uploaded to Google Play Store; therefore, I have developed it just for personal purposes as sample project. 
 
 
-<img src="https://github.com/smedic/Android-YouTube-Background-Player/blob/master/raw/sc.png" alt="alt text" width="300" height="500">
-<img src="https://github.com/smedic/Android-YouTube-Background-Player/blob/master/raw/sc2.png" alt="alt text" width="300" height="500">
-<img src="https://github.com/smedic/Android-YouTube-Background-Player/blob/master/raw/sc3.png" alt="alt text" width="300" height="500">
+<img src="/raw/sc.png" width="280" height="470"> <img src="/raw/sc2.png" width="280" height="470"> <img src="/raw/sc3.png" width="280" height="470">
