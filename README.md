@@ -1,10 +1,12 @@
 # Android-YouTube-Background-Player
 
-YT player which plays only audio in background.
+YouTube client for playing music in background. It is also capable of playing music while screen is off.
 
-This is agains YT terms of service and could not be present on Google Play Store; therefore, I have developed it just for personal purposes. 
+Application reproduces only audio stream without video, which significantly reduces network load. Stream is chosen adaptively based on network quality.
 
-Application provides mechanisms for searching videos and playlists on YT, as well as logging into a Google account in order to acquire private playlists, which normally cannot be accessed.
+Player provides mechanisms for searching content, saving it in favorites list, accessing recently played music and loading user playlists by using OAuth2.0. Also, skin can be chosen by using color picker.
 
-<img src="https://github.com/smedic/Android-YouTube-Background-Player/blob/master/raw/Screenshot_2016-03-24-10-21-27.png" alt="alt text" width="360" height="640">
-<img src="https://github.com/smedic/Android-YouTube-Background-Player/blob/master/raw/Screenshot_2016-03-24-10-20-31.png" alt="alt text" width="360" height="640">
+These features violate Google YouTube's terms of service and cannot be uploaded to Google Play Store; therefore, I have developed it just for personal purposes as sample project. 
+
+
+<img src="/raw/sc.png" width="280" height="470"> <img src="/raw/sc2.png" width="280" height="470"> <img src="/raw/sc3.png" width="280" height="470">
