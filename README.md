@@ -10,3 +10,9 @@ These features violate Google YouTube's terms of service and cannot be uploaded 
 
 
 <img src="/raw/sc.png" width="280" height="470"> <img src="/raw/sc2.png" width="280" height="470"> <img src="/raw/sc3.png" width="280" height="470">
+
+--------
+Releases can be found here https://github.com/smedic/Android-YouTube-Background-Player/releases.
+
+Latest version is 2.1 and APK can be downloaded from here 
+https://github.com/smedic/Android-YouTube-Background-Player/releases/download/2.1/com.smedic.tubtub-debug.apk
