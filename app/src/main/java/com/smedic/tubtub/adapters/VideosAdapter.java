@@ -25,12 +25,12 @@ import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
 import com.smedic.tubtub.R;
 import com.smedic.tubtub.database.YouTubeSqlDb;
 import com.smedic.tubtub.interfaces.ItemEventsListener;
 import com.smedic.tubtub.model.YouTubeVideo;
 import com.smedic.tubtub.utils.Config;
-import com.squareup.picasso.Picasso;
 
 import java.util.List;
 
@@ -70,7 +70,8 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.ViewHolder
             itemChecked[position] = false;
         }
 
-        Picasso.with(context).load(video.getThumbnailURL()).into(holder.thumbnail);
+        Glide.with(context).load(video.getThumbnailURL()).into(holder.thumbnail);
+
         holder.title.setText(video.getTitle());
         holder.duration.setText(video.getDuration());
         holder.viewCount.setText(video.getViewCount());

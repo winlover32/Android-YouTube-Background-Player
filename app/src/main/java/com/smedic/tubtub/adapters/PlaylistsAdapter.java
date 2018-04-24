@@ -12,10 +12,10 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
 import com.smedic.tubtub.R;
 import com.smedic.tubtub.interfaces.ItemEventsListener;
 import com.smedic.tubtub.model.YouTubePlaylist;
-import com.squareup.picasso.Picasso;
 
 import java.util.List;
 
@@ -45,7 +45,7 @@ public class PlaylistsAdapter extends RecyclerView.Adapter<PlaylistsAdapter.View
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
         final YouTubePlaylist playlist = playlists.get(position);
-        Picasso.with(context).load(playlist.getThumbnailURL()).into(holder.thumbnail);
+        Glide.with(context).load(playlist.getThumbnailURL()).into(holder.thumbnail);
         holder.title.setText(playlist.getTitle());
         String videosNumberText = context.getString(R.string.number_of_videos) + String.valueOf(playlist.getNumberOfVideos());
         holder.videosNumber.setText(videosNumberText);
