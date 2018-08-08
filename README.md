@@ -14,5 +14,5 @@ These features violate Google YouTube's terms of service and cannot be uploaded 
 --------
 Releases can be found here https://github.com/smedic/Android-YouTube-Background-Player/releases.
 
-Latest version is 2.1 and APK can be downloaded from here 
-https://github.com/smedic/Android-YouTube-Background-Player/releases/download/2.1/com.smedic.tubtub-debug.apk
+Latest version is 2.2 and APK can be downloaded from here 
+https://github.com/smedic/Android-YouTube-Background-Player/releases/download/2.2/app-debug_v2_2.apk
